@@ -96,6 +96,7 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
   const { dispatch } = useStore();
   const { toast } = useToast();
   const [edit, setEdit] = useState(false);
+  const [more, setMore] = useState(false);
   const [pace, setPace] = useState(Math.round(surplus / 4 / 1000) * 1000 || 10_000);
   const p = planGoal(goal, ctx);
   const set = (patch: Partial<Goal>) => dispatch({ type: 'upsertGoal', goal: { ...goal, ...patch } });
@@ -103,6 +104,11 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
   const months = earliestMonths(goal, pace, ctx);
   const tone = p.verdict === 'comfortable' ? 'good' : p.verdict === 'stretch' ? 'watch' : 'bad';
   const hasLoan = p.loanAmount > 0;
+  const short = p.requiredMonthly - surplus;
+  const status: { tone: 'good' | 'watch' | 'bad'; text: string } = short > 0
+    ? { tone: 'bad', text: `${money(short)} a month more than your surplus` }
+    : hasLoan && tone !== 'good' ? { tone, text: `${emiWords()} would be ${pct(p.foir * 100, 0)} of income` }
+    : { tone: 'good', text: 'Fits your surplus' };
 
   return (
     <Card
@@ -110,13 +116,26 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
       sub={`Price today ${money(goal.price)}`}
       right={<div className="row-actions"><button className="btn small" aria-expanded={edit} onClick={() => setEdit(!edit)}><Icon name={edit ? 'close' : 'pencil'} size={16} />{edit ? 'Done' : 'Edit'}</button><button className="btn small danger" onClick={() => { dispatch({ type: 'deleteGoal', id: goal.id }); toast(`${goal.name} goal removed`, { undo: () => dispatch({ type: 'upsertGoal', goal }) }); }}><Icon name="trash" size={16} />Remove</button></div>}
     >
-      {goal.kind !== 'other' && (
-        <div className="showcase goal-showcase" role="group" aria-label={`${goal.name}, drag to look around`}>
-          <Suspense fallback={<div className="sub" style={{ padding: 24 }}>Loading 3D view...</div>}>
-            <Showcase3D only={goal.kind} />
-          </Suspense>
+      <div className="goal-summary">
+        {goal.kind !== 'other' && (
+          <div className="showcase goal-showcase" role="group" aria-label={`${goal.name}, drag to look around`}>
+            <Suspense fallback={null}>
+              <Showcase3D only={goal.kind} />
+            </Suspense>
+          </div>
+        )}
+        <div className="goal-facts">
+          <div className="stats goal-stats">
+            <div><div className="sub">Save each month</div><div className="num goal-figure">{money(p.requiredMonthly)}</div></div>
+            <div><div className="sub">Cash needed on the day</div><div className="num goal-figure">{money(p.upfront)}</div></div>
+            {hasLoan && <div><div className="sub">{emiWord(true)} after</div><div className="num goal-figure">{money(p.emi)}</div></div>}
+          </div>
+          <div className="row">
+            <Badge tone={status.tone}>{status.tone === 'good' ? '✓' : status.tone === 'watch' ? '!' : '✕'} {status.text}</Badge>
+          </div>
         </div>
-      )}
+      </div>
+      <button className="btn small" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Hide details' : 'Details'}</button>
 
       {edit && (
         <div className="form-grid" style={{ marginBottom: 16 }}>
@@ -131,7 +150,9 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
         </div>
       )}
 
-      <div className="grid g2">
+      {more && (<>
+      {others > 0 && p.requiredMonthly > 0 && <p className="sub" style={{ marginTop: 12 }}>Judged on its own. Your other goals also draw {money(others)} a month from the same surplus.</p>}
+      <div className="grid g2" style={{ marginTop: 16 }}>
         <div>
           <h3 style={{ marginBottom: 8 }}>The numbers</h3>
           <dl className="kv">
@@ -155,15 +176,6 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
               : <>You already have enough set aside for the up-front cash. </>}
             {features.investing && (p.years < 3 ? 'The date is under 3 years away, so keep this out of equity: a market fall right before purchase would hurt.' : 'The date is 3+ years away, so some market exposure is reasonable.')}
           </div></div>
-          {p.requiredMonthly > 0 && (
-            <Callout tone={p.requiredMonthly > surplus ? 'bad' : 'good'}>
-              {p.requiredMonthly > surplus
-                ? <>On its own, this goal needs {money(p.requiredMonthly - surplus)} a month more than your surplus of {money(surplus)}.</>
-                : <>On its own, this goal fits your surplus of {money(surplus)} with {money(surplus - p.requiredMonthly)} a month to spare.</>}
-              {others > 0 && <> Your other goals already ask for {money(others)} a month from the same surplus, which is not counted here.</>}
-            </Callout>
-          )}
-          {hasLoan && <div className="row"><Badge tone={tone}>{tone === 'good' ? '✓' : tone === 'watch' ? '!' : '✕'} {p.verdict}</Badge><span className="sub">Total {emiWords()} would be {pct(p.foir * 100, 0)} of monthly income {ctx.existingEmi > 0 ? `(including ${money(ctx.existingEmi)} you pay now)` : ''}</span></div>}
           <div className="row">
             <span className="sub">If I save</span>
             <div style={{ width: 130 }}><NumInput className="inline-input" value={pace} onChange={setPace} aria-label="Monthly saving" /></div>
@@ -205,6 +217,7 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
           <p className="sub" style={{ marginTop: 6 }}>Pick the shortest tenure whose {emiWord()} stays comfortable. Rate shown is what you entered; a flat rate for the whole tenure is assumed.</p>
         </div>
       )}
+      </>)}
     </Card>
   );
 }

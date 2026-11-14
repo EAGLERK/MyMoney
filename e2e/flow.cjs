@@ -119,7 +119,8 @@ const check = (ok, msg) => {
   await page.getByRole('button', { name: 'Add goal' }).click();
   await page.getByRole('button', { name: /^House/ }).click();
   check((await page.locator('.goal-showcase').count()) === 2 && !(await page.getByText('All goals together').count()), 'two goals get two separate scenes and no combined card');
-  check(await page.getByText(/On its own, this goal/).count() >= 1, 'each goal says whether it fits the surplus on its own');
+  check((await page.locator('.goal-facts .badge').count()) === 2, 'each goal has its own one-line verdict');
+  check(!(await page.getByText('Sanity checks').count()), 'the long detail is hidden until Details is pressed');
   await page.getByRole('button', { name: 'Remove', exact: true }).last().click();
   await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await page.locator('label:has-text("Price today") input').fill('2000000');
