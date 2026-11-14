@@ -30,7 +30,7 @@ const prevMonthCsv = () => {
   const ym = d.toISOString().slice(0, 7);
   const [y, m] = ym.split('-');
   return { label: d.toLocaleString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
-    csv: `Date,Narration,Withdrawal Amt.,Deposit Amt.,Closing Balance\n02/${m}/${y},SALARY,,10000.00,10000.00\n05/${m}/${y},RENT,30000.00,,-20000.00\n` };
+    csv: `Date,Narration,Withdrawal Amt.,Deposit Amt.,Closing Balance\n25/${m}/${y},SALARY,,10000.00,10000.00\n28/${m}/${y},RENT,30000.00,,-20000.00\n` };
 };
 
 async function importCsv(page, name, text) {

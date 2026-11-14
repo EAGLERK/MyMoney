@@ -110,11 +110,17 @@ const check = (ok, msg) => {
   check(t.includes('₹29,200') && t.includes('₹15,000'), 'Sep spend 29,200 excludes the 15,000 SIP, which shows as invested');
 
   await nav('Goals').click();
-  // The 3D scene is a lazy chunk, so wait for its canvas instead of checking at once.
-  const canvasShown = await page.waitForSelector('.showcase canvas', { timeout: 15000 }).then(() => true, () => false);
-  check(canvasShown, 'Goals page renders the 3D scene canvas');
+  check(!(await page.locator('.showcase canvas').count()) && !(await page.getByText('All goals together').count()), 'Goals page has no shared 3D scene and no combined "all goals" card when there are no goals');
   await page.getByRole('button', { name: 'Add goal' }).click();
   await page.getByRole('button', { name: /^Car/ }).click();
+  // The 3D scene is a lazy chunk, so wait for its canvas instead of checking at once. Each goal has its own.
+  const canvasShown = await page.waitForSelector('.showcase canvas', { timeout: 15000 }).then(() => true, () => false);
+  check(canvasShown, 'a goal renders its own 3D scene canvas');
+  await page.getByRole('button', { name: 'Add goal' }).click();
+  await page.getByRole('button', { name: /^House/ }).click();
+  check((await page.locator('.goal-showcase').count()) === 2 && !(await page.getByText('All goals together').count()), 'two goals get two separate scenes and no combined card');
+  check(await page.getByText(/On its own, this goal/).count() >= 1, 'each goal says whether it fits the surplus on its own');
+  await page.getByRole('button', { name: 'Remove', exact: true }).last().click();
   await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await page.locator('label:has-text("Price today") input').fill('2000000');
   check((await main()).includes('₹20,00,000'), 'goal price edit flows into the plan');

@@ -48,8 +48,6 @@ export function Goals() {
   };
 
   const plans = state.goals.map((g) => ({ g, p: planGoal(g, ctx) }));
-  const totalMonthly = plans.reduce((a, x) => a + x.p.requiredMonthly, 0);
-  const totalEmi = plans.reduce((a, x) => a + x.p.emi, 0);
   const surplus = Math.max(0, d.plan.income - d.plan.spend);
 
   return (
@@ -78,30 +76,6 @@ export function Goals() {
       )}
 
 
-      {plans.length > 0 && (
-        <Card title="All goals together">
-          <div className="stats">
-            <div><div className="sub">Saving needed every month</div><div className="num" style={{ fontSize: 24, fontWeight: 650 }}>{money(totalMonthly)}</div></div>
-            <div><div className="sub">Your monthly surplus</div><div className="num" style={{ fontSize: 24, fontWeight: 650 }}>{money(surplus)}</div><div className="sub">{d.plan.fromTransactions ? `Average of the last ${d.plan.months} month${d.plan.months === 1 ? '' : 's'}` : 'From your profile estimate'}</div></div>
-            <div><div className="sub">New {emiWords()} once all goals are bought</div><div className="num" style={{ fontSize: 24, fontWeight: 650 }}>{money(totalEmi)}</div></div>
-          </div>
-          {totalMonthly > surplus ? (
-            <div style={{ marginTop: 12 }}><Callout tone="bad">Your goals need {money(totalMonthly - surplus)} a month more than you have left over. Something has to give: push dates out, trim prices, or raise income.{features.investing ? ' The Plan tab shows which goal gets funded first.' : ''}</Callout></div>
-          ) : (
-            <div style={{ marginTop: 12 }}><Callout tone="good">All goals fit inside your surplus with {money(surplus - totalMonthly)} a month to spare.{features.investing ? ' The Plan tab funds your emergency fund and any costly debt before goals, so check it for the real order.' : ''}</Callout></div>
-          )}
-        </Card>
-      )}
-
-      <section className="card" style={{ padding: 0, overflow: 'hidden' }} aria-label="Car, house and bike">
-        <div className="showcase">
-          <Suspense fallback={<div className="sub" style={{ padding: 24 }}>Loading 3D view...</div>}>
-            <Showcase3D />
-          </Suspense>
-        </div>
-        <div className="showcase-caption"><span><i style={{ background: 'var(--s1)' }} />Car</span><span><i style={{ background: 'var(--s2)' }} />House</span><span><i style={{ background: 'var(--s3)' }} />Bike</span><span className="muted">Drag to look around</span></div>
-      </section>
-
       {plans.length === 0 && !choosing && (
         <Card>
           <div className="empty-cta">
@@ -111,14 +85,14 @@ export function Goals() {
           </div>
         </Card>
       )}
-      {plans.map(({ g }) => <GoalCard key={g.id} goal={g} ctx={ctx} surplus={surplus} />)}
+      {plans.map(({ g }) => <GoalCard key={g.id} goal={g} ctx={ctx} surplus={surplus} others={plans.reduce((a, x) => a + (x.g.id === g.id ? 0 : x.p.requiredMonthly), 0)} />)}
 
       <LoansCard />
     </div>
   );
 }
 
-function GoalCard({ goal, ctx, surplus }: { goal: Goal; ctx: PlanContext; surplus: number }) {
+function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext; surplus: number; others: number }) {
   const { dispatch } = useStore();
   const { toast } = useToast();
   const [edit, setEdit] = useState(false);
@@ -136,6 +110,14 @@ function GoalCard({ goal, ctx, surplus }: { goal: Goal; ctx: PlanContext; surplu
       sub={`Price today ${money(goal.price)}`}
       right={<div className="row-actions"><button className="btn small" aria-expanded={edit} onClick={() => setEdit(!edit)}><Icon name={edit ? 'close' : 'pencil'} size={16} />{edit ? 'Done' : 'Edit'}</button><button className="btn small danger" onClick={() => { dispatch({ type: 'deleteGoal', id: goal.id }); toast(`${goal.name} goal removed`, { undo: () => dispatch({ type: 'upsertGoal', goal }) }); }}><Icon name="trash" size={16} />Remove</button></div>}
     >
+      {goal.kind !== 'other' && (
+        <div className="showcase goal-showcase" role="group" aria-label={`${goal.name}, drag to look around`}>
+          <Suspense fallback={<div className="sub" style={{ padding: 24 }}>Loading 3D view...</div>}>
+            <Showcase3D only={goal.kind} />
+          </Suspense>
+        </div>
+      )}
+
       {edit && (
         <div className="form-grid" style={{ marginBottom: 16 }}>
           <Field label="Name"><input value={goal.name} onChange={(e) => set({ name: e.target.value })} /></Field>
@@ -173,6 +155,14 @@ function GoalCard({ goal, ctx, surplus }: { goal: Goal; ctx: PlanContext; surplu
               : <>You already have enough set aside for the up-front cash. </>}
             {features.investing && (p.years < 3 ? 'The date is under 3 years away, so keep this out of equity: a market fall right before purchase would hurt.' : 'The date is 3+ years away, so some market exposure is reasonable.')}
           </div></div>
+          {p.requiredMonthly > 0 && (
+            <Callout tone={p.requiredMonthly > surplus ? 'bad' : 'good'}>
+              {p.requiredMonthly > surplus
+                ? <>On its own, this goal needs {money(p.requiredMonthly - surplus)} a month more than your surplus of {money(surplus)}.</>
+                : <>On its own, this goal fits your surplus of {money(surplus)} with {money(surplus - p.requiredMonthly)} a month to spare.</>}
+              {others > 0 && <> Your other goals already ask for {money(others)} a month from the same surplus, which is not counted here.</>}
+            </Callout>
+          )}
           {hasLoan && <div className="row"><Badge tone={tone}>{tone === 'good' ? '✓' : tone === 'watch' ? '!' : '✕'} {p.verdict}</Badge><span className="sub">Total {emiWords()} would be {pct(p.foir * 100, 0)} of monthly income {ctx.existingEmi > 0 ? `(including ${money(ctx.existingEmi)} you pay now)` : ''}</span></div>}
           <div className="row">
             <span className="sub">If I save</span>

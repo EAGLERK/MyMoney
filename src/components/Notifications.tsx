@@ -28,9 +28,9 @@ export function useAlerts() {
   const alerts = useMemo(() => {
     const today = todayISO();
     const ctx = { today: d.today, rates: d.rates, monthlyIncome: d.plan.income, existingEmi: d.plan.existingEmi, marginal: d.marginal, annualIncome: state.profile.annualGrossIncome };
-    const goalsNeed = state.goals.reduce((a, g) => a + planGoal(g, ctx).requiredMonthly, 0);
+    const goals = state.goals.map((g) => ({ id: g.id, name: g.name, need: planGoal(g, ctx).requiredMonthly }));
     return buildAlerts({
-      name: state.profile.name, today, txns: state.txns, goalCount: state.goals.length, goalsNeed,
+      name: state.profile.name, today, txns: state.txns, goals,
       surplus: Math.max(0, d.plan.income - d.plan.spend), income: d.plan.income, existingEmi: d.plan.existingEmi,
       lastBackupAt: state.lastBackupAt, signedIn: !!auth?.user, sync: sync?.status,
       sample: state.txns.some((t) => t.source === 'demo'),

@@ -52,8 +52,8 @@ const specimens = () => `
     <button class="btn danger">${ico('M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3')}Remove</button><button class="btn danger-solid">Erase all data</button><button class="btn" disabled>Disabled</button><button class="btn icon" aria-label="Add">${ico('M12 5v14M5 12h14')}</button></div></div>
   <div class="grp"><h4>Badges and status</h4><div class="wrap"><span class="badge">Neutral</span><span class="badge good">On</span><span class="badge watch">Estimate</span><span class="badge bad">Over</span><span class="badge info">Info</span></div></div>
   <div class="grp"><h4>Callouts</h4><div class="stack">
-    <div class="callout good"><span class="ic" aria-hidden="true">✓</span><div>All goals fit inside your surplus with ₹11,121 a month to spare.</div></div>
-    <div class="callout watch"><span class="ic" aria-hidden="true">!</span><div>Your goals need more than you have left over.</div></div>
+    <div class="callout good"><span class="ic" aria-hidden="true">✓</span><div>On its own, this goal fits your surplus with ₹11,121 a month to spare.</div></div>
+    <div class="callout watch"><span class="ic" aria-hidden="true">!</span><div>On its own, this goal needs more than you have left over.</div></div>
     <div class="callout bad" role="alert"><span class="ic" aria-hidden="true">✕</span><div>I could not read that sheet.</div></div>
     <div class="callout info"><span class="ic" aria-hidden="true">i</span><div>Loan rates differ by lender.</div></div></div></div>
   <div class="grp"><h4>Fields and segmented control</h4><div class="wrap top">

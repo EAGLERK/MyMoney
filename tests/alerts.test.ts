@@ -5,7 +5,7 @@ import type { Txn } from '../src/engine/types';
 let n = 0;
 const tx = (date: string, amount: number, type: 'income' | 'expense', category = 'Groceries'): Txn => ({ id: `t${n++}`, date, description: category, amount, type, category, source: 'manual' });
 
-const base: AlertInput = { name: 'Asha', today: '2026-11-10', txns: [], goalCount: 0, goalsNeed: 0, surplus: 0, income: 0, existingEmi: 0, signedIn: false, sample: false };
+const base: AlertInput = { name: 'Asha', today: '2026-11-10', txns: [], goals: [], surplus: 0, income: 0, existingEmi: 0, signedIn: false, sample: false };
 const ids = (i: Partial<AlertInput>) => buildAlerts({ ...base, ...i }).map((a) => a.id);
 
 describe('alerts', () => {
@@ -33,11 +33,19 @@ describe('alerts', () => {
   });
 
   it('warns about heavy EMIs and goals that do not fit', () => {
-    const r = ids({ income: 100000, existingEmi: 45000, goalCount: 2, goalsNeed: 60000, surplus: 40000 });
+    const two = [{ id: 'a', name: 'Car', need: 30000 }, { id: 'b', name: 'House', need: 30000 }];
+    const r = ids({ income: 100000, existingEmi: 45000, goals: [{ id: 'a', name: 'Car', need: 60000 }], surplus: 40000 });
     expect(r).toContain('emi-burden');
-    expect(r).toContain('goals-gap');
-    expect(ids({ income: 100000, existingEmi: 30000, goalCount: 2, goalsNeed: 30000, surplus: 40000 })).not.toContain('emi-burden');
-    expect(ids({ income: 100000, existingEmi: 30000, goalCount: 2, goalsNeed: 30000, surplus: 40000 })).not.toContain('goals-gap');
+    expect(r).toContain('goal-gap:a');
+    expect(ids({ income: 100000, existingEmi: 30000, goals: two, surplus: 40000 })).not.toContain('emi-burden');
+  });
+
+  it('judges each goal alone: two goals that each fit are not flagged for adding up to more than the surplus', () => {
+    const two = [{ id: 'a', name: 'Car', need: 30000 }, { id: 'b', name: 'House', need: 30000 }];
+    expect(ids({ goals: two, surplus: 40000 }).some((x) => x.startsWith('goal-gap'))).toBe(false);
+    const r = ids({ goals: [{ id: 'a', name: 'Car', need: 30000 }, { id: 'b', name: 'House', need: 50000 }], surplus: 40000 });
+    expect(r).toContain('goal-gap:b');
+    expect(r).not.toContain('goal-gap:a');
   });
 
   it('counts uncategorised transactions in buckets, so the id changes only when it grows a lot', () => {

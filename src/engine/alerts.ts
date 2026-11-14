@@ -18,9 +18,8 @@ export interface AlertInput {
   name: string;
   today: string;
   txns: Txn[];
-  goalCount: number;
-  /** What all goals together need to save each month, and what is left over each month. */
-  goalsNeed: number;
+  /** Each goal on its own: what it needs to save each month. Goals are judged one at a time against the surplus, never added together. */
+  goals: Array<{ id: string; name: string; need: number }>;
   surplus: number;
   income: number;
   existingEmi: number;
@@ -65,8 +64,8 @@ export function buildAlerts(i: AlertInput): AppAlert[] {
   if (i.income > 0 && i.existingEmi / i.income > 0.4) {
     add({ id: 'emi-burden', level: 'watch', title: `${emiWords(true)} take a large share of your income`, body: `Your ${emiWords()} are ${Math.round((i.existingEmi / i.income) * 100)}% of your monthly income. Lenders usually like to see 40% or less, and new loans for goals will add to it.`, action: { label: 'See your loans', tab: 'goals' } });
   }
-  if (i.goalCount > 0 && i.goalsNeed > i.surplus) {
-    add({ id: 'goals-gap', level: 'watch', title: 'Your goals need more than you have left over', body: `Together they need ${money(i.goalsNeed)} a month and your surplus is ${money(i.surplus)}. Push a date out, trim a price or raise income.`, action: { label: 'Adjust goals', tab: 'goals' } });
+  for (const g of i.goals) {
+    if (g.need > i.surplus) add({ id: `goal-gap:${g.id}`, level: 'watch', title: `${g.name} needs more than you have left over`, body: `It needs ${money(g.need)} a month and your surplus is ${money(i.surplus)}. Push the date out, trim the price or raise income.`, action: { label: 'Adjust goal', tab: 'goals' } });
   }
 
   const other = i.txns.filter((t) => t.category === 'Other').length;

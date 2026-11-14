@@ -38,7 +38,7 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     const phoneTabs = investing ? ['Home', 'Activity', 'Goals', 'Invest', 'Plan', 'Notes', 'Settings'] : ['Home', 'Activity', 'Goals', 'Notes', 'Settings'];
     for (const tab of phoneTabs) {
       await ph.getByRole('navigation').getByRole('button', { name: tab, exact: true }).click();
-      if (tab === 'Goals') await ph.waitForSelector('.showcase canvas', { timeout: 15000 }).catch(() => {});
+      
       await ph.waitForTimeout(400);
       const small = await undersized(ph, 44);
       check(small.length === 0, `phone / ${tab}: every control is at least 44px tall` + (small.length ? ` (too small: ${small.slice(0, 4).map((x) => `${x.name} ${x.h}px`).join(', ')})` : ''));
