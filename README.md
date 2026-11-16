@@ -213,7 +213,7 @@ devices. Mobile-number sign-in is built but switched off until an SMS provider i
    Supabase > Authentication > Providers > Google and enable it.
 7. Recommended: turn on CAPTCHA and leaked-password protection under Authentication > Attack Protection (some options
    depend on your Supabase plan).
-8. Deploy the built site (`npm run build`) to any static host with the two `VITE_SUPABASE_*` values set at build time.
+8. Deploy the built site (`npm run build`, output in `dist`) to any static host with the two `VITE_SUPABASE_*` values set at build time. The repo is set up for **Vercel**: `vercel.json` holds the build command, the output folder and caching headers (the service worker `sw.js` and the manifest are never cached, so a release reaches people at once; the hashed files in `assets/` are cached for a year). In Vercel, import the repo, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Settings, Environment Variables (Production and Preview), and deploy. No rewrites are needed: the app uses `#` addresses. After the first deploy, add the Vercel address (and any custom domain) to Supabase Authentication, URL Configuration, and to the Google client's authorised origins and redirect URIs. Preview deployments get a new address each time, so sign-in with Google works on the production domain only unless you add the preview addresses too.
 9. Check your setup: `npm run check:supabase`. It reads `.env.local`, confirms the project answers to your key, that the
    table exists and refuses anonymous access, that email confirmation is on and that Google is enabled. It prints OK, WARN
    or FAIL with the fix for each, and changes nothing. It cannot see your Google client settings or redirect URLs, so

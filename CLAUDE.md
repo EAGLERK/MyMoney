@@ -32,7 +32,7 @@ On a normal machine, no prefix is needed. `.env.local` (git-ignored) holds the p
 
 ## Building the preview page
 
-`npm run build:single` reads `.env.local` like any build, which would bake the Supabase project and a sign-in screen into the preview page (the preview viewer has no network). Build it with the values blanked: `VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= npm run build:single`. For a Netlify or other real deploy, set the real values in the host's environment variables instead.
+`npm run build:single` reads `.env.local` like any build, which would bake the Supabase project and a sign-in screen into the preview page (the preview viewer has no network). Build it with the values blanked: `VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= npm run build:single`. The site is deployed on Vercel (`vercel.json`); there, set the real values in the project's environment variables instead.
 
 ## Checks before pushing
 
