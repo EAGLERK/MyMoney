@@ -205,7 +205,7 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
       </div>
 
       {recent.length > 0 && (
-        <Card title="Recent activity" right={<button className="btn hero outline-accent" onClick={() => go('transactions')}>View all</button>}>
+        <Card title="Recent activity" right={<button className="btn outline-accent" onClick={() => go('transactions')}>View all</button>}>
           <div className="table-wrap">
             <table className="table cards txn2">
               <thead><tr><th>Description</th><th className="c">Date</th><th className="c">Category</th><th className="c">Type</th><th className="r">Amount</th></tr></thead>
