@@ -70,14 +70,14 @@ export function IncomeSpendChart({ data }: { data: IncomeSpendRow[] }) {
                 <XAxis dataKey="label" tick={tick} axisLine={axisLine} tickLine={false} tickMargin={8} />
                 <YAxis tick={tick} axisLine={false} tickLine={false} tickFormatter={axisMoney} width={44} />
                 <Tooltip content={<Tip />} cursor={{ fill: 'var(--surface-2)' }} />
-                <Bar isAnimationActive={false} dataKey="income" name="Income" fill="var(--s1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-                <Bar isAnimationActive={false} dataKey="spend" name="Spend" fill="var(--s2)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+                <Bar isAnimationActive={false} dataKey="income" name="Income" fill="var(--chart-deep)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                <Bar isAnimationActive={false} dataKey="spend" name="Spend" fill="var(--chart-light)" radius={[4, 4, 0, 0]} maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="legend" style={{ marginTop: 8 }}>
-            <span><i style={{ background: 'var(--s1)' }} />Income</span>
-            <span><i style={{ background: 'var(--s2)' }} />Spend (excludes money you invested)</span>
+            <span><i style={{ background: 'var(--chart-deep)' }} />Income</span>
+            <span><i style={{ background: 'var(--chart-light)' }} />Spend (excludes money you invested)</span>
           </div>
         </>
       }

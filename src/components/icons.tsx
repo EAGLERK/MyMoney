@@ -53,11 +53,68 @@ import closeUrl from '../assets/figma/close.svg';
 import nextUrl from '../assets/figma/next.svg';
 import uploadUrl from '../assets/figma/upload.svg';
 
+import calendarUrl from '../assets/figma/calendar.svg';
+import arrowUpRightUrl from '../assets/figma/arrow-up-right.svg';
+import walletUrl from '../assets/figma/wallet.svg';
+import bankUrl from '../assets/figma/bank.svg';
+import goalUrl from '../assets/figma/goal.svg';
+import cashUrl from '../assets/figma/cash.svg';
+import triangleDownUrl from '../assets/figma/triangle-down.svg';
+import mailUrl from '../assets/figma/mail.svg';
+import rupeeUrl from '../assets/figma/rupee.svg';
+import lockUrl from '../assets/figma/lock.svg';
+import passwordUrl from '../assets/figma/password.svg';
+import themeUrl from '../assets/figma/theme.svg';
+import databaseUrl from '../assets/figma/database.svg';
+import sunUrl from '../assets/figma/sun.svg';
+import moonUrl from '../assets/figma/moon.svg';
+import textUrl from '../assets/figma/text.svg';
+import todoUrl from '../assets/figma/todo.svg';
+import tableUrl from '../assets/figma/table.svg';
+import dividerUrl from '../assets/figma/divider.svg';
+import imageUrl from '../assets/figma/image.svg';
+import videoUrl from '../assets/figma/video.svg';
+import fileUrl from '../assets/figma/file.svg';
+import calendarSmallUrl from '../assets/figma/calendar-small.svg';
+import chartUrl from '../assets/figma/chart.svg';
+import formUrl from '../assets/figma/form.svg';
+import emojiUrl from '../assets/figma/emoji.svg';
+import gridUrl from '../assets/figma/grid.svg';
+import listUrl from '../assets/figma/list.svg';
+
 const MASKS = {
   'f-dashboard': dashboardUrl, 'f-transactions': transactionsUrl, 'f-goals': goalsUrl, 'f-notes': notesUrl, 'f-settings': settingsUrl,
   'f-search': searchUrl, 'f-filter': filterUrl, 'f-import': importUrl, 'f-edit': editUrl, 'f-trash': trashUrl, 'f-close': closeUrl,
   'f-next': nextUrl, 'f-prev': nextUrl, // the design mirrors one arrow for "previous"
   'f-upload': uploadUrl,
+ 'f-calendar': calendarUrl,
+ 'f-arrow-up-right': arrowUpRightUrl,
+ 'f-wallet': walletUrl,
+ 'f-bank': bankUrl,
+ 'f-goal': goalUrl,
+ 'f-cash': cashUrl,
+ 'f-triangle-down': triangleDownUrl,
+ 'f-mail': mailUrl,
+ 'f-rupee': rupeeUrl,
+ 'f-lock': lockUrl,
+ 'f-password': passwordUrl,
+ 'f-theme': themeUrl,
+ 'f-database': databaseUrl,
+ 'f-sun': sunUrl,
+ 'f-moon': moonUrl,
+ 'f-text': textUrl,
+ 'f-todo': todoUrl,
+ 'f-table': tableUrl,
+ 'f-divider': dividerUrl,
+ 'f-image': imageUrl,
+ 'f-video': videoUrl,
+ 'f-file': fileUrl,
+ 'f-calendar-small': calendarSmallUrl,
+ 'f-chart': chartUrl,
+ 'f-form': formUrl,
+ 'f-emoji': emojiUrl,
+ 'f-grid': gridUrl,
+ 'f-list': listUrl,
 } as const;
 
 export type IconName = keyof typeof PATHS | keyof typeof MASKS;

@@ -36,8 +36,8 @@ const stored = (p) => p.evaluate(() => (JSON.parse(localStorage.getItem('mymoney
     check((await p.getByRole('navigation').getByRole('button', { name: 'Notes', exact: true }).count()) >= 1, 'Notes is in the navigation');
     await nav(p, 'Notes');
     check(await shown(p.getByRole('heading', { name: 'Notes', exact: true })) && await shown(p.getByText('No notes yet.')), 'a new account sees an empty Notes screen that says what it is for');
-    check((await p.locator('main .btn.primary').count()) === 1, 'New note is the only green button');
-    await p.getByRole('button', { name: 'New note' }).click();
+    check((await p.locator('.frame .btn.primary:visible').count()) === 1, 'the top bar button is the only green button');
+    await p.getByRole('button', { name: 'Add a note' }).click();
     const choices = await p.getByRole('group', { name: 'Choose a starting point' }).getByRole('button').allInnerTexts();
     check(choices.length === 3 && /Things to buy/.test(choices[0]) && /Things to sell/.test(choices[1]) && /Blank note/.test(choices[2]), 'it offers three starting points: things to buy, things to sell, blank');
 
@@ -101,7 +101,7 @@ const stored = (p) => p.evaluate(() => (JSON.parse(localStorage.getItem('mymoney
     await p.waitForTimeout(700);
     check(((await stored(p))[0]?.blocks || []).length === 3 && (await p.getByText('Saved', { exact: true }).isVisible()), 'it saves by itself shortly after typing and says Saved');
     await p.getByRole('textbox', { name: 'Note title' }).fill('Home shopping');
-    await p.getByRole('button', { name: 'All notes' }).click(); // straight away, before the delay has passed
+    await p.locator('main').getByRole('button', { name: 'Notes', exact: true }).click(); // straight away, before the delay has passed
     await p.waitForTimeout(100);
     check((await stored(p))[0]?.title === 'Home shopping', 'leaving the editor straight after typing still saves the last change');
     const card = p.getByRole('button', { name: 'Open Home shopping' });
@@ -113,17 +113,17 @@ const stored = (p) => p.evaluate(() => (JSON.parse(localStorage.getItem('mymoney
     check((await p.getByRole('textbox', { name: 'To-do item' }).count()) === 2 && (await p.getByRole('checkbox', { name: 'Done: Milk' }).isChecked()) && (await p.locator('section.block[aria-label="Table"]').getByRole('textbox', { name: 'Price, row 2' }).inputValue()) === '3,500', 'after a reload the note is exactly as it was');
 
     // ---------- deleting a note ----------
-    await p.getByRole('button', { name: 'Delete note' }).click();
+    await p.getByRole('button', { name: 'Delete', exact: true }).click();
     check(await shown(p.getByText('Home shopping deleted')) && (await stored(p)).length === 0, 'Delete note removes it with a toast');
     await p.locator('.toast-btn', { hasText: 'Undo' }).click();
     check((await stored(p)).length === 1 && (await stored(p))[0].blocks.length === 3, 'Undo brings the whole note back');
 
     // ---------- the other starting points ----------
-    await p.getByRole('button', { name: 'New note' }).click();
+    await p.getByRole('button', { name: 'Add a note' }).click();
     await p.getByRole('button', { name: /^Things to sell/ }).click();
     check(await shown(p.locator('section.block[aria-label="Table"]').getByRole('textbox', { name: 'Column 2 name' })) && (await p.locator('section.block[aria-label="Table"]').getByRole('textbox', { name: 'Column 2 name' }).inputValue()) === 'Asking price (₹)', 'things to sell starts as a table with item, asking price and status');
-    await p.getByRole('button', { name: 'All notes' }).click();
-    await p.getByRole('button', { name: 'New note' }).click();
+    await p.locator('main').getByRole('button', { name: 'Notes', exact: true }).click();
+    await p.getByRole('button', { name: 'Add a note' }).click();
     await p.getByRole('button', { name: /^Blank note/ }).click();
     check(await p.getByRole('textbox', { name: 'Note title' }).evaluate((e) => e === document.activeElement) && (await p.getByRole('textbox', { name: 'Note text' }).count()) === 1, 'a blank note puts the cursor in the title and starts with a text box');
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
@@ -139,7 +139,7 @@ const stored = (p) => p.evaluate(() => (JSON.parse(localStorage.getItem('mymoney
     ({ ctx, p } = await start(browser, { viewport: { width: 390, height: 800 }, isMobile: true, hasTouch: true }));
     check((await p.locator('.tabbar .tab').count()) === TABS && (await p.locator('.tabbar').getByRole('button', { name: 'Notes' }).count()) === 1, `phone: the tab bar has ${TABS} tabs including Notes`);
     await p.locator('.tabbar').getByRole('button', { name: 'Notes' }).click();
-    await p.getByRole('button', { name: 'New note' }).click();
+    await p.getByRole('button', { name: 'Add a note' }).click();
     await p.getByRole('button', { name: /^Things to buy/ }).click();
     await p.getByRole('textbox', { name: 'To-do item' }).first().fill('Milk');
     await p.getByRole('button', { name: 'Table', exact: true }).click();

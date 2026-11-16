@@ -114,7 +114,7 @@ const NATIVE_SHIM = `
     // ---------- offline ----------
     await ctx.setOffline(true);
     await p.reload();
-    check(await shown(p.getByRole('heading', { name: /Hi, Asha/ })), 'with no connection the app still opens, with the person\'s own data');
+    check(await shown(p.getByRole('heading', { name: /Welcome back, Asha/ })), 'with no connection the app still opens, with the person\'s own data');
     await p.getByRole('navigation').getByRole('button', { name: 'Goals', exact: true }).click();
     check(await shown(p.getByRole('heading', { name: 'Goals', exact: true })), 'and the screens still work');
     await ctx.setOffline(false);

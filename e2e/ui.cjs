@@ -22,7 +22,7 @@ const undersized = (page, min) => page.evaluate((m) => {
   }).filter((x) => x.h < m);
 }, min);
 
-const primaries = (page) => page.evaluate(() => [...document.querySelectorAll('main .btn.primary')].filter((e) => e.getBoundingClientRect().width > 0).map((e) => e.innerText.trim()));
+const primaries = (page) => page.evaluate(() => [...document.querySelectorAll('.frame .btn.primary')].filter((e) => e.getBoundingClientRect().width > 0).map((e) => e.innerText.trim()));
 const clipped = (page) => page.evaluate(() => [...document.querySelectorAll('main .pill-toggle')].filter((e) => e.getBoundingClientRect().width > 0 && e.scrollWidth > e.clientWidth + 1).map((e) => e.getAttribute('aria-label')));
 const count = async (page) => Number(((await page.locator('main').innerText()).match(/(\d+) shown/) || [])[1] ?? -1);
 
@@ -79,10 +79,25 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
 
     // ---------- alignment ----------
     await nav('Dashboard');
-    const tops = await p.evaluate(() => [...document.querySelectorAll('.sumcard .big')].map((e) => Math.round(e.getBoundingClientRect().top)));
+    const tops = await p.evaluate(() => [...document.querySelectorAll('.stat-card .stat-big')].map((e) => Math.round(e.getBoundingClientRect().top)));
     check(tops.length >= 2 && tops.every((y) => y === tops[0]), `dashboard: the headline figures sit on one line ${JSON.stringify(tops)}`);
-    const head = await p.evaluate(() => { const t = document.querySelector('.page-head h1').getBoundingClientRect(), b = document.querySelector('.page-head .btn.primary').getBoundingClientRect(); return { titleMid: (t.top + t.bottom) / 2, btnMid: (b.top + b.bottom) / 2 }; });
-    check(Math.abs(head.titleMid - head.btnMid) < 40, 'dashboard: the primary button sits in the header row beside the title');
+    const head = await p.evaluate(() => { const t = document.querySelector('.page-head h1').getBoundingClientRect(), b = document.querySelector('.page-head .month-pill').getBoundingClientRect(); return { titleMid: (t.top + t.bottom) / 2, btnMid: (b.top + b.bottom) / 2 }; });
+    check(Math.abs(head.titleMid - head.btnMid) < 40, 'dashboard: the month picker sits in the header row beside the title');
+
+    // ---------- the new design: shared top bar, range buttons, notes view, settings rows ----------
+    check((await p.getByRole('button', { name: 'Add transaction' }).count()) === 1 && (await p.locator('.crumbs .btn.primary').count()) === 1, 'top bar: one green Add transaction button on every screen');
+    await p.getByRole('button', { name: '3 months' }).click();
+    check(await shown(p.getByText(/Last 3 months/)), 'dashboard: the range buttons change the cash-flow period');
+    await p.getByLabel('Search transactions').fill('zomato');
+    check((await p.evaluate(() => location.hash)) === '#transactions' && (await p.locator('main .d-title').count()) > 0 && (await p.locator('main .d-title').allInnerTexts()).every((t) => /zomato/i.test(t)), 'top-bar search: typing on any screen opens Transactions, filtered');
+    await p.getByLabel('Search transactions').fill('');
+    await nav('Notes');
+    await p.getByRole('button', { name: 'List', exact: true }).click();
+    check((await p.locator('ul.note-cards.list').count()) === 1, 'notes: the list button switches the layout');
+    await p.getByRole('button', { name: 'Cards', exact: true }).click();
+    await nav('Settings');
+    check((await p.getByLabel('First name').inputValue()).length > 0 && (await p.getByRole('group', { name: 'Colour theme' }).getByRole('button').count()) === 3, 'settings: first and last name, and the theme choice, are on this screen');
+    await nav('Dashboard');
 
     await nav('Dashboard');
     await p.getByRole('button', { name: 'Add transaction' }).click();
@@ -192,17 +207,20 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     // ---------- Goals: one CTA, a clear chooser, undo ----------
     await nav('Goals');
     const goalCards = () => p.locator('main section.card h2', { hasText: /\(\d.*away\)|away/ }).count();
-    const goalsBefore = (await p.locator('text=/Price today/').count());
-    await p.getByRole('button', { name: 'Add goal' }).click();
+    const goalsBefore = await p.locator('.goal-row').count();
+    await p.getByRole('button', { name: 'Add a goal' }).click();
     const options = await p.getByRole('group', { name: 'Choose what you are saving for' }).getByRole('button').allInnerTexts();
     check(options.length === 5, `the chooser offers five labelled options (${options.map((o) => o.split('\n')[0]).join(', ')})`);
     await p.getByRole('button', { name: /^Bike/ }).click();
     check(await shown(p.locator('.toast', { hasText: 'Bike goal added' })), 'picking a type adds the goal and confirms it');
-    check((await p.locator('text=/Price today/').count()) === goalsBefore + 1, 'the new goal card appears');
-    await p.getByRole('button', { name: 'Remove' }).last().click();
+    check(await shown(p.getByRole('dialog')), 'the new goal opens its details at once');
+    await p.keyboard.press('Escape');
+    check((await p.locator('.goal-row').count()) === goalsBefore + 1, 'the new goal card appears');
+    await p.getByRole('button', { name: /View details of Bike/ }).last().click();
+    await p.getByRole('button', { name: 'Remove goal' }).click();
     check(await shown(p.locator('.toast', { hasText: 'goal removed' })), 'removing a goal shows a toast');
     await p.locator('.toast-btn', { hasText: 'Undo' }).last().click();
-    check((await p.locator('text=/Price today/').count()) === goalsBefore + 1, 'Undo restores the removed goal');
+    check((await p.locator('.goal-row').count()) === goalsBefore + 1, 'Undo restores the removed goal');
     void goalCards;
 
     // ---------- Goals: loans live here ----------
@@ -232,10 +250,9 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     check(await shown(p.getByRole('dialog')), 'Erase all data asks for confirmation in the page');
     await p.getByRole('button', { name: 'Cancel' }).last().click();
 
-    // ---------- brand: the M mark in mint on a dark tile ----------
-    const logo = await p.locator('.sidebar .brand-mark').evaluate((e) => ({ bg: getComputedStyle(e).backgroundColor, fg: getComputedStyle(e).color, path: e.querySelector('svg path')?.getAttribute('d') || '' }));
-    check(logo.path.startsWith('M6 94V34') && logo.bg === 'rgb(10, 10, 10)' && logo.fg === 'rgb(52, 211, 153)', `the sidebar shows the M mark in mint on a near-black tile (${logo.fg} on ${logo.bg})`);
-    check((await p.evaluate(() => document.querySelector('link[rel=icon]').href)).includes('M6%2094V34') || (await p.evaluate(() => document.querySelector('link[rel=icon]').href)).includes('M6 94V34'), 'the browser tab icon is the same M');
+    // ---------- brand: the logo lockup and the app tile ----------
+    check((await p.locator('.sidebar .lockup').getAttribute('aria-label')) === 'MyMoney' && (await p.locator('.sidebar .lockup img:visible').count()) === 1, 'the sidebar shows the MyMoney logo lockup, one drawing for the current theme');
+    check((await p.evaluate(() => document.querySelector('link[rel=icon]').getAttribute('href'))) === '/icon.svg', 'the browser tab icon is the app tile');
 
     // ---------- theme switcher: three labelled icon buttons ----------
     const themeBtns = p.getByRole('group', { name: 'Colour theme' }).getByRole('button');

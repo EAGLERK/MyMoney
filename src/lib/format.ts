@@ -37,6 +37,12 @@ export const cur = (): string => currencySymbol();
 export const pct = (n: number, digits = 1): string => (Number.isFinite(n) ? `${n.toFixed(digits)}%` : '-');
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** The full month name and year, as the Dashboard heading and month picker show it: "November 2026". */
+export const monthLong = (m: string): string => {
+  const [y, mo] = m.split('-').map(Number);
+  return new Date(Date.UTC(y, mo - 1, 1)).toLocaleString(undefined, { month: 'long', timeZone: 'UTC' }) + ` ${y}`;
+};
+
 export const monthLabel = (m: string, withYear = true): string => {
   const [y, mo] = m.split('-').map(Number);
   return withYear ? `${MONTH_NAMES[mo - 1]} ${y}` : MONTH_NAMES[mo - 1];

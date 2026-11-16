@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Mascot } from './Mascot';
 import { uid } from '../lib/format';
 import { pulse, popIn, wave } from '../motion';
 import { useStore } from '../store';
@@ -272,7 +273,7 @@ export function Voice({ go, theme, setTheme, tabs }: { go: (tab: string) => void
       {open && (
         <div ref={panel} className="notif-panel voice-panel" role="dialog" aria-label={`${ASSISTANT}, your voice assistant`}>
           <div className="voice-head">
-            <span className="voice-avatar" aria-hidden><Icon name="mic" size={16} /></span>
+            <span className="voice-avatar" aria-hidden><Mascot mood={thinking ? 'wink-right' : listening ? 'right' : 'happy'} size={40} /></span>
             <div className="voice-who">
               <h2>{ASSISTANT}</h2>
               <span className="sub">Your money assistant{aiReady && aiOn ? ' · AI on' : ''}</span>

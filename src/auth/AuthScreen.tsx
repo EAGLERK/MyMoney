@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { authFeatures } from './supabase';
-import { Logo } from '../components/Logo';
+import { LogoLockup } from '../components/Logo';
 import { PasswordInput } from '../components/ui';
 
 const GoogleG = () => (
@@ -19,7 +19,7 @@ function Shell({ title, sub, children }: { title: string; sub?: string; children
     <div className="authwrap">
       <div className="authcard card">
         <div className="brand" style={{ padding: 0 }}>
-          <Logo />MyMoney
+          <LogoLockup height={44} />
         </div>
         <div>
           <h1 style={{ marginBottom: 4 }}>{title}</h1>

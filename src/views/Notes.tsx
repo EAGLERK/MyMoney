@@ -9,6 +9,12 @@ import { useStore } from '../store';
 import { onOpenNote, takePendingNote } from '../voice/bus';
 
 const when = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+/** "today", or the date as 05 Nov 2026 */
+const editedOn = (iso: string) => (sameDay(new Date(iso), new Date()) ? 'today' : new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }));
+
+type View = 'grid' | 'list';
+const readView = (): View => { try { return localStorage.getItem('mymoney:notesView') === 'list' ? 'list' : 'grid'; } catch { return 'grid'; } };
 
 const STARTS: Array<{ kind: NoteKind; icon: IconName; title: string; hint: string }> = [
   { kind: 'buy', icon: 'todo', title: 'Things to buy', hint: 'A to-do list with checkboxes' },
@@ -20,6 +26,8 @@ export function Notes() {
   const { state, dispatch } = useStore();
   const [openId, setOpenId] = useState<string | null>(() => takePendingNote());
   const [choosing, setChoosing] = useState(false);
+  const [view, setView] = useState<View>(readView);
+  const pickView = (v: View) => { setView(v); try { localStorage.setItem('mymoney:notesView', v); } catch { /* storage blocked */ } };
   const notes = useMemo(() => [...(state.notes ?? [])].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), [state.notes]);
   const open = openId ? notes.find((n) => n.id === openId) : undefined;
   // The voice assistant can ask for a note to be opened while this screen is already showing.
@@ -41,9 +49,15 @@ export function Notes() {
           <h1>Notes</h1>
           <div className="sub">Lists and tables for what you want to buy, sell or remember</div>
         </div>
-        <button className="btn primary" aria-expanded={choosing} onClick={() => setChoosing((c) => !c)}>
-          <Icon name={choosing ? 'close' : 'plus'} size={18} />{choosing ? 'Cancel' : 'New note'}
-        </button>
+        <div className="head-actions">
+          <div className="view-toggle" role="group" aria-label="How notes are shown">
+            <button aria-pressed={view === 'grid'} aria-label="Cards" title="Cards" onClick={() => pickView('grid')}><Icon name="f-grid" size={28} /></button>
+            <button aria-pressed={view === 'list'} aria-label="List" title="List" onClick={() => pickView('list')}><Icon name="f-list" size={28} /></button>
+          </div>
+          <button className="btn hero outline-accent" aria-expanded={choosing} onClick={() => setChoosing((c) => !c)}>
+            <Icon name={choosing ? 'close' : 'plus'} size={18} />{choosing ? 'Cancel' : 'Add a note'}
+          </button>
+        </div>
       </div>
 
       {choosing && (
@@ -69,14 +83,13 @@ export function Notes() {
           </Card>
         )
       ) : (
-        <ul className="clean chooser notes-list" aria-label="Your notes">
+        <ul className={`clean note-cards ${view}`} aria-label="Your notes">
           {notes.map((n) => (
             <li key={n.id}>
-              <button className="choice" onClick={() => setOpenId(n.id)} aria-label={`Open ${n.title || 'untitled note'}`}>
-                <span className="icon-tile"><Icon name={n.blocks[0]?.type === 'table' ? 'table' : n.blocks[0]?.type === 'todo' ? 'todo' : 'notes'} size={22} /></span>
-                <b>{n.title || 'Untitled note'}</b>
-                <span className="sub">{noteSummary(n)}</span>
-                <span className="sub">Edited {when(n.updatedAt)}</span>
+              <button className="note-card" onClick={() => setOpenId(n.id)} aria-label={`Open ${n.title || 'untitled note'}`}>
+                <b className="note-card-title">{n.title || 'Untitled note'}</b>
+                <span className="note-card-meta">Edited {editedOn(n.updatedAt)}</span>
+                <span className="note-card-sum">{noteSummary(n)}</span>
               </button>
             </li>
           ))}
@@ -164,13 +177,17 @@ function NoteEditor({ note: initial, onBack }: { note: Note; onBack: () => void 
   return (
     <div className="page note-editor">
       <div className="note-top">
-        <button className="btn" onClick={() => { commit(); onBack(); }}><Icon name="back" size={16} />All notes</button>
-        <span className="sub note-status" role="status">{status === 'saving' ? 'Saving...' : 'Saved'}</span>
-        <button className="btn small danger" onClick={removeNote}><Icon name="trash" size={16} />Delete note</button>
+        <nav className="crumb-trail" aria-label="Where you are">
+          <button className="linkbtn" onClick={() => { commit(); onBack(); }}>Notes</button>
+          <span aria-hidden className="crumb-sep">&#9656;</span>
+          <span aria-current="page" className="crumb-here">{note.title || 'Untitled'}</span>
+          <span className="sub note-status" role="status">{status === 'saving' ? 'Saving...' : 'Saved'}</span>
+        </nav>
+        <button className="btn ghost danger-text" onClick={removeNote}><Icon name="f-trash" size={20} />Delete</button>
       </div>
 
       <div>
-        <input className="cell-input note-title" aria-label="Note title" placeholder="Untitled note" autoFocus={!initial.title} value={note.title} onChange={(e) => change((n) => ({ ...n, title: e.target.value }))} />
+        <input className="cell-input note-title" aria-label="Note title" placeholder="Heading here" autoFocus={!initial.title} value={note.title} onChange={(e) => change((n) => ({ ...n, title: e.target.value }))} />
         <div className="sub note-meta">{total ? `${done} of ${total} done · ` : ''}Edited {when(note.updatedAt)}</div>
       </div>
 
@@ -182,13 +199,11 @@ function NoteEditor({ note: initial, onBack }: { note: Note; onBack: () => void 
         </BlockFrame>
       ))}
 
-      <Card title="Add to this note">
-        <div className="row">
-          <button className="btn" onClick={() => add('text')}><Icon name="text" size={16} />Text</button>
-          <button className="btn" onClick={() => add('table')}><Icon name="table" size={16} />Table</button>
-          <button className="btn" onClick={() => add('todo')}><Icon name="todo" size={16} />To-do list</button>
-        </div>
-      </Card>
+      <div className="note-toolbar" role="group" aria-label="Add to this note">
+        <button className="btn" onClick={() => add('text')}><Icon name="f-text" size={20} />Text</button>
+        <button className="btn" onClick={() => add('todo')}><Icon name="f-todo" size={20} />To-do</button>
+        <button className="btn" onClick={() => add('table')}><Icon name="f-table" size={20} />Table</button>
+      </div>
     </div>
   );
 }

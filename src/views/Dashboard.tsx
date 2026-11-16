@@ -3,62 +3,68 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { addMonths, insights, series, summarize } from '../engine/cashflow';
 import { planGoal } from '../engine/goals';
 import { Icon, type IconName } from '../components/icons';
-import { Badge, Callout, Card, Delta, Empty, Toggle } from '../components/ui';
+import { Callout, Card, Empty } from '../components/ui';
 import { HBars, IncomeSpendChart, StackedBar } from '../components/charts';
-import { money, moneyCompact, monthLabel, monthsText, pct } from '../lib/format';
+import { money, moneyCompact, moneyExact, monthLabel, monthLong, monthsText, pct } from '../lib/format';
 import { features } from '../features';
 import { cascade } from '../motion';
 import { useStore } from '../store';
 
-export const GROUP_COLOR = { income: 'var(--s1)', needs: 'var(--s1)', wants: 'var(--s2)', savings: 'var(--s3)' } as const;
+export const GROUP_COLOR = { income: 'var(--chart-deep)', needs: 'var(--chart-mid)', wants: 'var(--chart-light)', savings: 'var(--chart-deep)' } as const;
 export const CLASS_COLOR = { equity: 'var(--s1)', debt: 'var(--s2)', cash: 'var(--s3)', gold: 'var(--s4)', other: 'var(--s5)' } as const;
 
 type PillTone = 'good' | 'watch' | 'bad' | 'plain';
-const MARK: Record<PillTone, string> = { good: '✓', watch: '!', bad: '✕', plain: '' };
 
-function SummaryCard(props: {
+/** One of the three summary cards: an icon tile and title, one big figure with a pill, a couple of small figures, and a round button that opens the screen behind it. */
+function StatCard(props: {
   feature?: boolean;
   icon: IconName;
   title: string;
   subtitle: string;
   value: ReactNode;
   pill?: { text: string; tone: PillTone };
-  extra?: ReactNode;
-  foot: string;
-  onFoot: () => void;
+  stats: Array<{ label: string; value: string }>;
+  open: string;
+  onOpen: () => void;
 }) {
   return (
-    <section className={`card sumcard ${props.feature ? 'feature' : ''}`}>
-      <div className="body">
-        <div className="head">
-          <span className="icon-tile"><Icon name={props.icon} /></span>
-          <div>
-            <div className="title">{props.title}</div>
-            <div className="subtitle">{props.subtitle}</div>
-          </div>
+    <section className={`card stat-card ${props.feature ? 'feature' : ''}`}>
+      <div className="stat-head">
+        <span className="icon-tile"><Icon name={props.icon} size={32} /></span>
+        <div>
+          <div className="stat-title">{props.title}</div>
+          <div className="stat-sub">{props.subtitle}</div>
         </div>
-        <div className="big num">
-          {props.value}
-          {props.pill && <span className={`dpill ${props.pill.tone}`}>{MARK[props.pill.tone]} {props.pill.text}</span>}
-        </div>
-        {props.extra}
       </div>
-      <button className="foot" onClick={props.onFoot}>{props.foot}<Icon name="arrow" size={18} /></button>
+      <div className="stat-big num">
+        {props.value}
+        {props.pill && <span className={`dpill ${props.pill.tone}`}>{props.pill.text}</span>}
+      </div>
+      <div className="stat-foot">
+        <dl className="stat-figs">
+          {props.stats.map((x) => <div key={x.label}><dt>{x.label}</dt><dd className="num">{x.value}</dd></div>)}
+        </dl>
+        <button className="round-go" aria-label={props.open} title={props.open} onClick={props.onOpen}><Icon name="f-arrow-up-right" size={24} /></button>
+      </div>
     </section>
   );
 }
 
+const RANGES = ['1', '3', '6', '9', '12'] as const;
+type Range = (typeof RANGES)[number];
+
 export function Dashboard({ go }: { go: (tab: string) => void }) {
   const { state, d } = useStore();
   const [month, setMonth] = useState(d.latestMonth);
-  const [range, setRange] = useState<'6' | '12'>('6');
+  const [range, setRange] = useState<Range>('6');
   const cur = useMemo(() => summarize(state.txns, month), [state.txns, month]);
   const prev = useMemo(() => summarize(state.txns, addMonths(month, -1)), [state.txns, month]);
   const trend = useMemo(() => series(state.txns, month, Number(range)), [state.txns, month, range]);
   const notes = useMemo(() => insights(state.txns, month), [state.txns, month]);
-  const recent = useMemo(() => [...state.txns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8), [state.txns]);
+  const recent = useMemo(() => [...state.txns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5), [state.txns]);
   const page = useRef<HTMLDivElement>(null);
-  const greeting = state.profile.name.trim() ? `Hi, ${state.profile.name.trim()}` : 'Overview';
+  const first = state.profile.name.trim().split(/\s+/)[0];
+  const greeting = first ? `Welcome back, ${first}!` : 'Overview';
   // The summary cards arrive one after another, once each time the Dashboard opens (not when the month changes).
   useEffect(() => { if (page.current) cascade(page.current.querySelectorAll('.sumgrid > *')); }, []);
 
@@ -74,7 +80,7 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
         <Empty title="Nothing here yet">
           <p style={{ marginBottom: 14 }}>Add a transaction, import a bank statement, or connect a Google Sheet, and this page fills in with your own numbers.</p>
           <div className="row" style={{ justifyContent: 'center' }}>
-            <button className="btn primary" onClick={() => go('add-transaction')}>Add a transaction</button>
+            <button className="btn" onClick={() => go('add-transaction')}>Add a transaction</button>
             <button className="btn" onClick={() => go('transactions')}>Import or connect a sheet</button>
           </div>
         </Empty>
@@ -94,90 +100,130 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
   const nextGoal = [...state.goals].sort((a, b) => a.targetMonth.localeCompare(b.targetMonth))[0];
   const goalPlan = nextGoal ? planGoal(nextGoal, ctx) : null;
 
+  const leftDelta = cur.saved - prev.saved;
+  const hasPrev = prev.txnCount > 0;
+  const emiShare = d.plan.income > 0 ? d.plan.existingEmi / d.plan.income : 0;
+
   return (
     <div className="page" ref={page}>
       <div className="page-head">
         <div>
           <h1>{greeting}</h1>
-          <div className="sub">Overview of your money for {monthLabel(month)}</div>
+          <div className="sub">Overview of your money for {monthLong(month)}</div>
         </div>
-        <div className="row" style={{ gap: 12 }}>
-          <div className="row" style={{ gap: 6 }}>
-            <button className="btn icon small" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>&larr;</button>
-            <b style={{ minWidth: 86, textAlign: 'center' }}>{monthLabel(month)}</b>
-            <button className="btn icon small" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>&rarr;</button>
-          </div>
-          <button className="btn primary" onClick={() => go('add-transaction')}><Icon name="plus" size={18} />Add transaction</button>
+        <div className="month-pill" role="group" aria-label="Month">
+          <button className="btn icon small ghost" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>&larr;</button>
+          <span className="month-pill-label"><Icon name="f-calendar" size={24} /><b>{monthLong(month)}</b></span>
+          <button className="btn icon small ghost" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>&rarr;</button>
         </div>
       </div>
 
       {!hasData && <Callout tone="info">No transactions in {monthLabel(month)}. Use the arrows to move to a month with data, or add transactions.</Callout>}
 
       <div className="sumgrid">
-        <SummaryCard
-          feature icon="wallet" title="Left over" subtitle={`${monthLabel(month)} · income minus spend`}
+        <StatCard
+          feature icon="f-wallet" title="Left over" subtitle="Income minus spend"
           value={money(cur.saved)} pill={cur.income > 0 ? { text: `${pct(savePct * 100, 0)} saved`, tone: saveTone } : undefined}
-          extra={<div className="mini"><div>Income<b>{money(cur.income)}</b></div><div>Spent<b>{money(cur.spend)}</b></div>{features.investing && <div>Invested<b>{money(cur.invested)}</b></div>}</div>}
-          foot="See where it went" onFoot={() => go('transactions')}
+          stats={[{ label: 'Income', value: money(cur.income) }, { label: 'Spent', value: money(cur.spend) }, ...(features.investing ? [{ label: 'Invested', value: money(cur.invested) }] : [])]}
+          open="See where it went" onOpen={() => go('transactions')}
         />
         {features.investing ? (
-          <SummaryCard
-            icon="net" title="Net worth" subtitle="Everything you hold minus what you owe"
+          <StatCard
+            icon="f-cash" title="Net worth" subtitle="Assets minus what you owe"
             value={moneyCompact(p.netWorth)} pill={p.total > 0 ? { text: `${pct(p.blendedPosttax)} after tax`, tone: 'plain' } : undefined}
-            extra={<div className="sub">Assets {moneyCompact(p.total)} &middot; Liabilities {moneyCompact(p.liabilities)}</div>}
-            foot="Analyze performance" onFoot={() => go('investments')}
-          />
-        ) : state.liabilities.length > 0 ? (
-          <SummaryCard
-            icon="wallet" title="Loans" subtitle={`${state.liabilities.length} loan${state.liabilities.length === 1 ? '' : 's'} you are paying`}
-            value={`${money(d.plan.existingEmi)}/mo`}
-            pill={d.plan.income > 0 ? { text: `${pct((d.plan.existingEmi / d.plan.income) * 100, 0)} of income`, tone: d.plan.existingEmi / d.plan.income > 0.4 ? 'bad' : d.plan.existingEmi / d.plan.income > 0.3 ? 'watch' : 'good' } : undefined}
-            extra={<div className="sub">Still owed: {moneyCompact(p.liabilities)}</div>}
-            foot="See your loans" onFoot={() => go('goals')}
-          />
-        ) : null}
-        {goalPlan && nextGoal ? (
-          <SummaryCard
-            icon="target" title={`Next goal: ${nextGoal.name}`} subtitle={`${monthLabel(nextGoal.targetMonth)} · ${monthsText(goalPlan.months)} away`}
-            value={`${money(goalPlan.requiredMonthly)}/mo`}
-            pill={goalPlan.loanAmount > 0 ? { text: goalPlan.verdict, tone: goalPlan.verdict === 'comfortable' ? 'good' : goalPlan.verdict === 'stretch' ? 'watch' : 'bad' } : undefined}
-            extra={<div className="sub">Save to have {moneyCompact(goalPlan.upfront)} on the day{goalPlan.loanAmount > 0 ? `, then ${emiWord()}: ${money(goalPlan.emi)}` : ''}</div>}
-            foot="View goals" onFoot={() => go('goals')}
+            stats={[{ label: 'Assets', value: moneyCompact(p.total) }, { label: 'Liabilities', value: moneyCompact(p.liabilities) }]}
+            open="Analyze performance" onOpen={() => go('investments')}
           />
         ) : (
-          <SummaryCard
-            icon="target" title="Goals" subtitle="Car, house, bike" value="None yet"
-            extra={<div className="sub">Add a goal to see the cash and monthly saving it needs.</div>}
-            foot="Add a goal" onFoot={() => go('goals')}
+          <StatCard
+            icon="f-bank" title="Loans" subtitle={state.liabilities.length ? `${state.liabilities.length} active loan${state.liabilities.length === 1 ? '' : 's'}` : 'No loans recorded'}
+            value={`${money(d.plan.existingEmi)}/m`}
+            pill={d.plan.income > 0 && d.plan.existingEmi > 0 ? { text: `${pct(emiShare * 100, 0)} of income`, tone: emiShare > 0.4 ? 'bad' : emiShare > 0.3 ? 'watch' : 'good' } : undefined}
+            stats={[{ label: 'Still owed', value: moneyCompact(p.liabilities) }]}
+            open="See your loans" onOpen={() => go('goals')}
+          />
+        )}
+        {goalPlan && nextGoal ? (
+          <StatCard
+            icon="f-goal" title="Goal" subtitle={`${nextGoal.name} . ${monthsText(goalPlan.months)} away`}
+            value={`${money(goalPlan.requiredMonthly)}/m`}
+            pill={goalPlan.loanAmount > 0 ? { text: goalPlan.verdict[0].toUpperCase() + goalPlan.verdict.slice(1), tone: goalPlan.verdict === 'comfortable' ? 'good' : goalPlan.verdict === 'stretch' ? 'watch' : 'bad' } : undefined}
+            stats={[{ label: 'Save to have', value: money(goalPlan.upfront) }, ...(goalPlan.loanAmount > 0 ? [{ label: emiWord(true), value: money(goalPlan.emi) }] : [])]}
+            open="View goals" onOpen={() => go('goals')}
+          />
+        ) : (
+          <StatCard
+            icon="f-goal" title="Goal" subtitle="Car, house, bike or trip" value="None yet"
+            stats={[]} open="Add a goal" onOpen={() => go('goals')}
           />
         )}
       </div>
 
-      <div className="grid g2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))' }}>
-        <Card
-          title="Cash flow"
-          sub={`Left over, last ${range} months`}
-          right={<Toggle label="Range" value={range} onChange={setRange} options={[['6', '6 months'], ['12', '12 months']]} />}
-        >
-          <div className={`bigfig num ${rangeSaved < 0 ? 'bad' : ''}`}>{money(rangeSaved)}</div>
-          <div className="sub" style={{ marginBottom: 8 }}>Spending in {monthLabel(month)}: <Delta now={cur.spend} before={prev.spend} upIsGood={false} fmt={moneyCompact} /></div>
+      <div className="dash-row">
+        <section className="card">
+          <div className="card-head-row">
+            <div className="stat-head">
+              <span className="icon-tile"><Icon name="f-cash" size={32} /></span>
+              <div>
+                <h2 className="stat-title">Cash flow</h2>
+                <div className="stat-sub">Left over . Last {range} {range === '1' ? 'month' : 'months'}</div>
+              </div>
+            </div>
+            <div className="range-toggle" role="group" aria-label="Range">
+              {RANGES.map((r) => <button key={r} aria-pressed={range === r} aria-label={`${r} ${r === '1' ? 'month' : 'months'}`} onClick={() => setRange(r)}>{r} M</button>)}
+            </div>
+          </div>
+          <div className="flow-figure">
+            <span className={`bigfig num ${rangeSaved < 0 ? 'bad' : ''}`}>{money(rangeSaved)}</span>
+            {hasPrev && leftDelta !== 0 && (
+              <span className={`delta-pill ${leftDelta < 0 ? 'bad' : 'good'}`}>
+                <span className={leftDelta < 0 ? '' : 'flip-y'} aria-hidden><Icon name="f-triangle-down" size={14} /></span>
+                {money(Math.abs(leftDelta))} {leftDelta < 0 ? 'less' : 'more'} than last month
+              </span>
+            )}
+          </div>
           <IncomeSpendChart data={trend.map((t) => ({ label: monthLabel(t.month, false), income: t.income, spend: t.spend, invested: t.invested }))} />
-        </Card>
+        </section>
 
-        <Card title="Where the money went" sub={`${monthLabel(month)} · bar colour shows needs, wants or investing`}>
-          {cur.byCategory.length === 0 ? <p className="sub">No spending recorded.</p> : (
+        <section className="card">
+          <div className="stat-head" style={{ display: 'block' }}>
+            <h2 className="stat-title">Where the money went</h2>
+            <div className="stat-sub">{monthLabel(month)} · {money(cur.spend + cur.invested)} total</div>
+          </div>
+          {cur.byCategory.length === 0 ? <p className="sub" style={{ marginTop: 12 }}>No spending recorded.</p> : (
             <>
               <HBars rows={cur.byCategory.slice(0, 10).map((c) => ({ label: c.category, value: c.amount, color: GROUP_COLOR[c.group] }))} total={cur.spend + cur.invested} />
               {cur.byCategory.length > 10 && <p className="sub" style={{ marginTop: 6 }}>Top 10 of {cur.byCategory.length} categories. Filter by category in Transactions for the rest.</p>}
               <div className="legend" style={{ marginTop: 10 }}>
-                <span><i style={{ background: GROUP_COLOR.needs }} />Needs</span>
-                <span><i style={{ background: GROUP_COLOR.wants }} />Wants</span>
                 <span><i style={{ background: GROUP_COLOR.savings }} />Invested</span>
+                <span><i style={{ background: GROUP_COLOR.wants }} />Wants</span>
+                <span><i style={{ background: GROUP_COLOR.needs }} />Needs</span>
               </div>
             </>
           )}
-        </Card>
+        </section>
       </div>
+
+      {recent.length > 0 && (
+        <Card title="Recent activity" right={<button className="btn hero outline-accent" onClick={() => go('transactions')}>View all</button>}>
+          <div className="table-wrap">
+            <table className="table cards txn2">
+              <thead><tr><th>Description</th><th className="c">Date</th><th className="c">Category</th><th className="c">Type</th><th className="r">Amount</th></tr></thead>
+              <tbody>
+                {recent.map((t) => (
+                  <tr key={t.id}>
+                    <td className="title" data-label="Description"><span className="d-title">{t.description || 'No description'}</span></td>
+                    <td className="c" data-label="Date"><span className="num">{t.date}</span></td>
+                    <td className="c" data-label="Category"><span className="pill">{t.category}</span></td>
+                    <td className="c" data-label="Type"><span className={t.type === 'income' ? 'credit' : 'debit'}>{t.type === 'income' ? 'Credit' : 'Debit'}</span></td>
+                    <td className="r" data-label="Amount"><span className="num">{t.type === 'income' ? '+' : '−'}{Number.isInteger(t.amount) ? money(t.amount) : moneyExact(t.amount)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       <div className="grid g2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))' }}>
         <Card title="50 / 30 / 20 check" sub="Guide: needs 50%, wants 30%, saving 20% of income">
@@ -213,7 +259,7 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
                       <tr key={h.inv.id}>
                         <td>{h.inv.name}</td>
                         <td className="r" style={{ whiteSpace: 'nowrap' }}>{moneyCompact(h.value)}</td>
-                        <td className={`r ${h.real < 0.5 ? 'bad' : ''}`} style={{ whiteSpace: 'nowrap' }}>{h.real < 0.5 ? '\u2715 ' : ''}{pct(h.real)}</td>
+                        <td className={`r ${h.real < 0.5 ? 'bad' : ''}`} style={{ whiteSpace: 'nowrap' }}>{h.real < 0.5 ? '✕ ' : ''}{pct(h.real)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -223,51 +269,6 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
           </Card>
         )}
       </div>
-
-      {state.goals.length > 0 && (
-        <Card title="Goals at a glance" right={<button className="btn small" onClick={() => go('goals')}>Plan goals</button>}>
-          <div className="table-wrap">
-            <table className="table num">
-              <thead><tr><th>Goal</th><th>When</th><th className="r">Cash needed</th><th className="r">Save / month</th><th className="r">{emiWord(true)} after</th><th>Affordability</th></tr></thead>
-              <tbody>
-                {state.goals.map((g) => {
-                  const pl = planGoal(g, ctx);
-                  return (
-                    <tr key={g.id}>
-                      <td>{g.name}</td>
-                      <td>{monthLabel(g.targetMonth)} <span className="muted small">({pl.months} mo)</span></td>
-                      <td className="r">{moneyCompact(pl.upfront)}</td>
-                      <td className="r">{money(pl.requiredMonthly)}</td>
-                      <td className="r">{pl.loanAmount > 0 ? money(pl.emi) : '-'}</td>
-                      <td>{pl.loanAmount > 0 ? <Badge tone={pl.verdict === 'comfortable' ? 'good' : pl.verdict === 'stretch' ? 'watch' : 'bad'}>{pl.verdict === 'comfortable' ? '✓ ' : pl.verdict === 'stretch' ? '! ' : '✕ '}{pl.verdict} ({pct(pl.foir * 100, 0)} of income)</Badge> : '-'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-
-      {recent.length > 0 && (
-        <Card title="Recent activity" right={<button className="btn small" onClick={() => go('transactions')}>View all</button>}>
-          <div className="table-wrap">
-            <table className="table">
-              <thead><tr><th>Description</th><th>Category</th><th>Date</th><th className="r">Amount</th></tr></thead>
-              <tbody>
-                {recent.map((t) => (
-                  <tr key={t.id}>
-                    <td style={{ overflowWrap: 'anywhere' }}>{t.description}</td>
-                    <td><span className="cat-pill">{t.category}</span></td>
-                    <td className="num" style={{ whiteSpace: 'nowrap' }}>{t.date}</td>
-                    <td className={`r num ${t.type === 'income' ? 'good' : ''}`} style={{ whiteSpace: 'nowrap' }}>{t.type === 'income' ? '+' : '-'}{money(t.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }

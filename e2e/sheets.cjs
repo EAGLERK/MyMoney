@@ -60,7 +60,7 @@ const minutes = (p, n) => p.clock.fastForward(n * 60_000);
     let { ctx, p, fake } = await start(browser);
 
     // ---------- the button and the dialog ----------
-    check((await p.locator('main .btn.primary').count()) === 1, 'still one green button on Transactions');
+    check((await p.locator('.frame .btn.primary:visible').count()) === 1, 'still one green button on Transactions');
     await p.getByRole('button', { name: 'Import', exact: true }).click();
     await p.getByRole('button', { name: 'Continue' }).click();
     check(await shown(dialog(p)) && await shown(p.getByText('Anyone with the link')), 'the Google Sheet button opens a dialog that says how to share the sheet');

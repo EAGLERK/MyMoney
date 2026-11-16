@@ -1,7 +1,10 @@
+import avatarRing from '../assets/figma/avatar-ring.svg';
+import { ThemeSwitch, type Theme } from '../components/ThemeSwitch';
+import type { IconName } from '../components/icons';
 import { COUNTRIES, countryOf, currencyChoices, emiWords, isIndia } from '../lib/region';
 import { useMemo, useRef, useState } from 'react';
 import type { Assumption } from '../engine/assumptions';
-import { Badge, Callout, Card, Field, Num, NumInput, PasswordInput, Toggle } from '../components/ui';
+import { Badge, Callout, Card, Field, NumInput, PasswordInput, Toggle } from '../components/ui';
 import { InstallCard } from '../components/Install';
 import { NotificationSettings } from '../components/Notifications';
 import { pct, cur } from '../lib/format';
@@ -14,6 +17,30 @@ import { useStore, type AppState } from '../store';
 import { incomeTax } from '../engine/tax';
 import { money } from '../lib/format';
 
+const initials = (name: string): string => {
+  const w = name.trim().split(/\s+/).filter(Boolean);
+  return ((w[0]?.[0] ?? '') + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase() || 'M';
+};
+
+/** A titled group of settings: the heading is a small capitalised label, each row an icon, a label, and its control on the right. */
+function SettingsSection({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
+  return (
+    <section className="set-section" aria-label={title}>
+      <h2>{title}</h2>
+      {note && <p className="sub set-note">{note}</p>}
+      <div className="set-rows">{children}</div>
+    </section>
+  );
+}
+function SettingsRow({ icon, label, hint, children }: { icon: IconName; label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="set-row">
+      <span className="set-label"><Icon name={icon} size={24} /><span>{label}{hint && <span className="hint">{hint}</span>}</span></span>
+      <div className="set-control">{children}</div>
+    </div>
+  );
+}
+
 const STATUS_TONE = { verified: 'good', check: 'watch', estimate: undefined } as const;
 const STATUS_HELP = {
   verified: 'Official notification, confirmed by several outlets',
@@ -21,7 +48,7 @@ const STATUS_HELP = {
   estimate: 'Modelling assumption, not a forecast',
 } as const;
 
-export function Settings() {
+export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme) => void }) {
   const { state, dispatch, d } = useStore();
   const auth = useAuth();
   const confirm = useConfirm();
@@ -29,6 +56,8 @@ export function Settings() {
   const p = state.profile;
   const india = isIndia(d.country);
   const where = auth?.user ? 'your account' : 'this browser';
+  const [first, ...rest] = p.name.trim().split(/\s+/);
+  const last = rest.join(' ');
 
   // Earlier versions could load made-up sample data. Anyone who still has it can take it out; nothing offers to add it any more.
   const hasSample = state.txns.some((t) => t.source === 'demo');
@@ -96,30 +125,38 @@ export function Settings() {
         </div>
       </div>
 
-      {auth?.user && <AccountCard />}
+      <div className="profile-head">
+        <span className="avatar big" aria-hidden style={{ backgroundImage: `url("${avatarRing}")` }}>{initials(p.name)}</span>
+        <Field label="First name"><input value={first} onChange={(e) => dispatch({ type: 'profile', patch: { name: `${e.target.value} ${last}`.trim() } })} /></Field>
+        <Field label="Last name"><input value={last} onChange={(e) => dispatch({ type: 'profile', patch: { name: `${first} ${e.target.value}`.trim() } })} /></Field>
+      </div>
 
-      <RegionCard />
-
-      <Card title="About you" sub={india ? 'Used for tax slab, equity share and fallbacks until you import transactions' : 'Used as fallbacks until you import transactions, and to check a house price against your income'}>
-        <div className="form-grid">
-          <Field label="Name"><input value={p.name} onChange={(e) => dispatch({ type: 'profile', patch: { name: e.target.value } })} /></Field>
-          <Num label="Age" value={p.age} onChange={(n) => dispatch({ type: 'profile', patch: { age: Math.round(n) } })} min={18} />
-          <Num label={`Monthly take-home (${cur()})`} value={p.monthlyIncome} onChange={(n) => dispatch({ type: 'profile', patch: { monthlyIncome: n } })} min={0} />
-          <Num label={`Monthly spend (${cur()})`} value={p.monthlyExpenses} onChange={(n) => dispatch({ type: 'profile', patch: { monthlyExpenses: n } })} min={0} hint={`Including rent and ${emiWords()}`} />
-          <Num label={`Annual gross income (${cur()})`} value={p.annualGrossIncome} onChange={(n) => dispatch({ type: 'profile', patch: { annualGrossIncome: n } })} min={0} hint={india ? 'Sets your tax slab' : 'Before tax. Used to check a house price against your income'} />
-          {features.investing && (<Num label="Emergency fund (months)" value={p.emergencyMonths} onChange={(n) => dispatch({ type: 'profile', patch: { emergencyMonths: n } })} min={0} hint="6 is standard; 9-12 if income is irregular" />)}
-          {features.investing && (<Field label="Risk comfort" wide><Toggle label="Risk profile" value={p.risk} onChange={(v) => dispatch({ type: 'profile', patch: { risk: v } })} options={[['conservative', 'Low'], ['moderate', 'Medium'], ['aggressive', 'High']]} /></Field>)}
-        </div>
-        <div className="row" style={{ marginTop: 12 }}>
+      <SettingsSection title="About" note={india ? 'Used for tax slab, equity share and fallbacks until you import transactions' : 'Used as fallbacks until you import transactions, and to check a house price against your income'}>
+        {auth?.user && <SettingsRow icon="f-mail" label="Email address"><span className="set-value">{auth.user.email || auth.user.phone}</span></SettingsRow>}
+        <SettingsRow icon="f-rupee" label={`Monthly take home (${cur()})`}><NumInput className="inline-input" aria-label="Monthly take-home" value={p.monthlyIncome} onChange={(n) => dispatch({ type: 'profile', patch: { monthlyIncome: n } })} /></SettingsRow>
+        <SettingsRow icon="f-rupee" label={`Monthly spend (${cur()})`} hint={`Including rent and ${emiWords()}`}><NumInput className="inline-input" aria-label="Monthly spend" value={p.monthlyExpenses} onChange={(n) => dispatch({ type: 'profile', patch: { monthlyExpenses: n } })} /></SettingsRow>
+        <SettingsRow icon="f-rupee" label={`Annual gross income (${cur()})`} hint={india ? 'Sets your tax slab' : 'Before tax. Used to check a house price against your income'}><NumInput className="inline-input" aria-label="Annual gross income" value={p.annualGrossIncome} onChange={(n) => dispatch({ type: 'profile', patch: { annualGrossIncome: n } })} /></SettingsRow>
+        <SettingsRow icon="f-calendar" label="Age"><NumInput className="inline-input" aria-label="Age" value={p.age} onChange={(n) => dispatch({ type: 'profile', patch: { age: Math.round(n) } })} /></SettingsRow>
+        {features.investing && <SettingsRow icon="f-lock" label="Emergency fund (months)" hint="6 is standard; 9-12 if income is irregular"><NumInput className="inline-input" aria-label="Emergency fund (months)" value={p.emergencyMonths} onChange={(n) => dispatch({ type: 'profile', patch: { emergencyMonths: n } })} /></SettingsRow>}
+        {features.investing && <SettingsRow icon="f-lock" label="Risk comfort"><Toggle label="Risk profile" value={p.risk} onChange={(v) => dispatch({ type: 'profile', patch: { risk: v } })} options={[['conservative', 'Low'], ['moderate', 'Medium'], ['aggressive', 'High']]} /></SettingsRow>}
+        <div className="row set-checks">
           {india && <label className="check"><input type="checkbox" checked={p.salaried} onChange={(e) => dispatch({ type: 'profile', patch: { salaried: e.target.checked } })} /> Salaried (Rs 75,000 standard deduction)</label>}
           {features.investing && (<label className="check"><input type="checkbox" checked={p.hasHealthInsurance} onChange={(e) => dispatch({ type: 'profile', patch: { hasHealthInsurance: e.target.checked } })} /> I have health insurance</label>)}
           {features.investing && (<label className="check"><input type="checkbox" checked={p.hasTermInsurance} onChange={(e) => dispatch({ type: 'profile', patch: { hasTermInsurance: e.target.checked } })} /> I have term life insurance</label>)}
         </div>
-        {india && <p className="sub" style={{ marginTop: 12 }}>
+        {india && <p className="sub set-note">
           Tax on this income (new regime, FY 2026-27): <b>{money(incomeTax(p.annualGrossIncome, p.salaried))}</b>.{features.investing && <> Tax on your next rupee of interest: <b>{pct(d.marginal * 100, 1)}</b>. Under the new regime income up to Rs 12.75 lakh (salaried) pays nil, so FD interest costs you nothing extra until you cross that line.</>}
         </p>}
-        {!india && <p className="sub" style={{ marginTop: 12 }}>There is no tax estimate for your country yet: the tax slabs built in are India&rsquo;s, so they are switched off here.</p>}
-      </Card>
+        {!india && <p className="sub set-note">There is no tax estimate for your country yet: the tax slabs built in are India&rsquo;s, so they are switched off here.</p>}
+      </SettingsSection>
+
+      <SettingsSection title="Appearance">
+        <SettingsRow icon="f-theme" label="Theme"><ThemeSwitch theme={theme} setTheme={setTheme} /></SettingsRow>
+      </SettingsSection>
+
+      {auth?.user && <AccountCard />}
+
+      <RegionCard />
 
       <Card title="Rates and assumptions" sub={features.investing ? 'Every number the planner uses. Change any of them; reset returns the default.' : 'The numbers your goals use. Change any of them; reset returns the default.'}>
         <div className="stack">
@@ -156,7 +193,7 @@ export function Settings() {
       <Card title="Your data" sub={auth?.user ? 'Stored in your MyMoney account and synced across your devices. Other users cannot read it.' : 'Everything is stored in this browser only. Nothing is sent anywhere.'}>
         <div className="stack">
           <div className="row">
-            <button className="btn primary" onClick={exportJson}>Download backup</button>
+            <button className="btn" onClick={exportJson}>Download backup</button>
             <button className="btn" onClick={copyBackup}>Copy backup</button>
             <button className="btn" onClick={() => file.current?.click()}>Restore from file</button>
             <input ref={file} type="file" accept="application/json" hidden aria-label="Backup file" onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ''; }} />

@@ -3,7 +3,7 @@ import { dialogIn } from '../motion';
 import { features } from '../features';
 import { authFeatures } from '../auth/supabase';
 import { COUNTRIES, countryOf, detectCountry } from '../lib/region';
-import { Logo } from './Logo';
+import { LogoLockup } from './Logo';
 
 /**
  * Shown over the Dashboard the first time someone arrives (right after signing up, or on first visit without an account).
@@ -25,7 +25,7 @@ export function WelcomeDialog({ suggestedName, onStart }: { suggestedName: strin
   return (
     <dialog ref={ref} className="modal welcome" aria-labelledby="welcome-title" aria-describedby="welcome-sub" onCancel={(e) => e.preventDefault()}>
       <form className="welcome-card" onSubmit={(e) => { e.preventDefault(); if (ready) onStart(name, country, currency); }}>
-        <div className="brand" style={{ padding: 0 }}><Logo />MyMoney</div>
+        <div className="brand" style={{ padding: 0 }}><LogoLockup height={44} /></div>
         <div>
           <h1 id="welcome-title" style={{ marginBottom: 4 }}>Let&rsquo;s set up your profile</h1>
           <p id="welcome-sub" className="sub">

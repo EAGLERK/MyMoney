@@ -1,24 +1,18 @@
-/**
- * The MyMoney mark: a blocky "M" (two pillars under a stepped bar, with a short stem hanging between them),
- * drawn on a 100-unit grid so it stays crisp at any size. It is an original construction inspired by the owner's reference,
- * and carries no registered-trademark sign.
- */
-export const LOGO_PATH = 'M6 94V34h16V14h56v20h16v60H70V46H60v34H40V46H30v48z';
+import appLogo from '../assets/brand/app-logo.svg';
+import lockupDark from '../assets/brand/logo-dark.svg';
+import lockupLight from '../assets/brand/logo-light.svg';
 
-/** The M on its own, filled with the current text colour. */
-export function LogoMark({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden fill="currentColor">
-      <path d={LOGO_PATH} />
-    </svg>
-  );
+/** The app tile from the brand file: a rounded square, mint to deep green, with a white M. */
+export function Logo({ size = 32 }: { size?: number }) {
+  return <img className="brand-mark" src={appLogo} alt="" width={size} height={size} aria-hidden />;
 }
 
-/** The app icon: the M in brand mint on a near-black tile (same in light and dark mode, like an app icon). */
-export function Logo() {
+/** The tile with the MyMoney wordmark. There is one drawing for light and one for dark (the wordmark changes colour); CSS shows the one that fits the theme. */
+export function LogoLockup({ height = 56 }: { height?: number }) {
   return (
-    <span className="brand-mark" aria-hidden>
-      <LogoMark size={22} />
+    <span className="lockup" role="img" aria-label="MyMoney">
+      <img className="lockup-light" src={lockupLight} alt="" height={height} style={{ height }} />
+      <img className="lockup-dark" src={lockupDark} alt="" height={height} style={{ height }} />
     </span>
   );
 }

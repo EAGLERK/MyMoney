@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import sheetsArt from '../assets/figma/sheets.png';
 import { dialogIn } from '../motion';
 import { DEFAULT_CATEGORIES, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../engine/categories';
@@ -14,6 +13,7 @@ import { Callout, Card, Field, Num } from '../components/ui';
 import { rowProblem, useDrafts } from '../components/Drafts';
 import { useConfirm, useToast } from '../components/feedback';
 import { money, monthLabel, todayISO, uid, cur, moneyExact } from '../lib/format';
+import { setSearch, useSearch } from '../lib/search';
 import { useStore } from '../store';
 
 const PAGE = 20;
@@ -48,7 +48,8 @@ export function Transactions({ openAdd = false, onCloseAdd }: { openAdd?: boolea
   const { toast } = useToast();
   const [month, setMonth] = useState('all');
   const [category, setCategory] = useState('all');
-  const [q, setQ] = useState('');
+  const q = useSearch();
+  const setQ = setSearch;
   const [source, setSource] = useState('all');
   const [page, setPage] = useState(1);
   const [adding, setAdding] = useState(openAdd);
@@ -56,8 +57,6 @@ export function Transactions({ openAdd = false, onCloseAdd }: { openAdd?: boolea
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [editing, setEditing] = useState<ReadonlySet<string>>(new Set());
   const wide = useWide();
-  const [slot, setSlot] = useState<HTMLElement | null>(null);
-  useEffect(() => { setSlot(document.getElementById('topbar-slot')); }, []);
   const months = useMemo(() => monthsWithData(state.txns).reverse(), [state.txns]);
   // Where rows came from (a statement file, a Google Sheet, or one tab of a sheet). The filter only appears when there is more than one.
   const sources = useMemo(() => [...new Set(state.txns.map((t) => t.file).filter((f): f is string => !!f))].sort(), [state.txns]);
@@ -117,16 +116,8 @@ export function Transactions({ openAdd = false, onCloseAdd }: { openAdd?: boolea
   const shown = list.slice((here - 1) * PAGE, here * PAGE);
   const unsavedNote = drafts.added.length ? ` · ${drafts.added.length} not saved yet` : '';
 
-  const searchBox = (
-    <label className="topbar-search">
-      <Icon name="f-search" size={24} />
-      <input type="search" aria-label="Search transactions" placeholder="Search a transaction..." value={q} onChange={(e) => change(setQ)(e.target.value)} />
-    </label>
-  );
-
   return (
     <div className="page">
-      {wide && slot && createPortal(searchBox, slot)}
       <div className="page-head">
         <div>
           <h1>Transactions</h1>
@@ -138,10 +129,6 @@ export function Transactions({ openAdd = false, onCloseAdd }: { openAdd?: boolea
             {filterCount > 0 && <span className="dot-count" aria-hidden>{filterCount}</span>}
           </button>
           <button className="btn hero outline-accent" onClick={() => setImporting(true)}><Icon name="f-import" size={24} />Import</button>
-          {/* One primary action per screen: while there are unsaved changes, Save changes is the primary one. */}
-          <button className={`btn hero ${drafts.dirty ? '' : 'primary'}`} aria-expanded={adding} onClick={() => setAdding(true)}>
-            <Icon name="plus" size={18} />Add transaction
-          </button>
         </div>
       </div>
 

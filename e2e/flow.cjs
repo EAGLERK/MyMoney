@@ -41,7 +41,7 @@ const check = (ok, msg) => {
   await page.getByLabel('What should we call you?').fill('Asha');
   check(await startBtn.isEnabled(), 'welcome: entering a name enables Start');
   await startBtn.click();
-  check(await page.getByRole('heading', { name: 'Hi, Asha' }).waitFor({ timeout: 6000 }).then(() => true, () => false), 'dashboard greets the person by name');
+  check(await page.getByRole('heading', { name: 'Welcome back, Asha!' }).waitFor({ timeout: 6000 }).then(() => true, () => false), 'dashboard greets the person by name');
   const place = await page.evaluate(() => { const h = document.querySelector('.page-head h1').getBoundingClientRect(); const m = document.querySelector('main').getBoundingClientRect(); return h.left - m.left < 8 && h.left < m.left + m.width / 3; });
   check(place, 'the greeting is on the left of the dashboard header');
   await page.getByRole('button', { name: 'Skip tour' }).click({ timeout: 6000 }).catch(() => {});
@@ -112,27 +112,30 @@ const check = (ok, msg) => {
   check(t.includes('₹29,200') && t.includes('₹15,000'), 'Sep spend 29,200 excludes the 15,000 SIP, which shows as invested');
 
   await nav('Goals').click();
-  check(!(await page.locator('.showcase canvas').count()) && !(await page.getByText('All goals together').count()), 'Goals page has no shared 3D scene and no combined "all goals" card when there are no goals');
-  await page.getByRole('button', { name: 'Add goal' }).click();
+  check(!(await page.getByText('All goals together').count()), 'Goals has no combined "all goals" card');
+  const dlg = page.getByRole('dialog');
+  await page.getByRole('button', { name: 'Add a goal' }).click();
   await page.getByRole('button', { name: /^Car/ }).click();
-  // The 3D scene is a lazy chunk, so wait for its canvas instead of checking at once. Each goal has its own.
-  const canvasShown = await page.waitForSelector('.showcase canvas', { timeout: 15000 }).then(() => true, () => false);
-  check(canvasShown, 'a goal renders its own 3D scene canvas');
-  await page.getByRole('button', { name: 'Add goal' }).click();
+  check(await dlg.waitFor({ timeout: 6000 }).then(() => true, () => false), 'a new goal opens its details');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Add a goal' }).click();
   await page.getByRole('button', { name: /^House/ }).click();
-  check((await page.locator('.goal-showcase').count()) === 2 && !(await page.getByText('All goals together').count()), 'two goals get two separate scenes and no combined card');
-  check((await page.locator('.goal-facts .badge').count()) === 2, 'each goal has its own one-line verdict');
-  check(!(await page.getByText('Sanity checks').count()), 'the long detail is hidden until Details is pressed');
-  await page.getByRole('button', { name: 'Remove', exact: true }).last().click();
-  await page.getByRole('button', { name: 'Add goal' }).click();
+  await page.keyboard.press('Escape');
+  check((await page.locator('.goal-row').count()) === 2 && (await page.locator('.goal-art').count()) === 2, 'two goals are two separate cards, each with its picture');
+  check(!(await page.getByText('Sanity checks').count()), 'the long detail is not on the card');
+  await page.getByRole('button', { name: /View details of House/ }).click();
+  await dlg.getByRole('button', { name: 'Remove goal' }).click();
+  await page.getByRole('button', { name: 'Add a goal' }).click();
   await page.getByRole('button', { name: /^Trip or vacation/ }).click();
-  check((await page.locator('.goal-showcase').count()) === 1 && (await page.getByRole('heading', { name: /^Trip/ }).count()) >= 0 && await page.getByText('Cost today').count() === 1, 'a trip goal is added: cash cost, and no 3D scene or loan figures');
-  await page.getByRole('button', { name: 'Edit', exact: true }).last().click();
-  check(!(await page.getByText('Loan rate (%)').count()) && !(await page.getByText('Down payment (%)').count()) && await page.getByText('Spending money, visa, insurance (%)').count() === 1, 'its editor shows cost, month and spending money, with no loan fields');
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await page.getByRole('button', { name: 'Remove', exact: true }).last().click();
-  await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
-  await page.locator('label:has-text("Price today") input').fill('2000000');
+  check(await dlg.getByLabel('Where to?').count() === 1 && !(await dlg.getByText('Loan rate (%)').count()) && !(await dlg.getByText('Down payment (%)').count()) && await dlg.getByText('Spending money, visa, insurance (%)').count() >= 1, 'a trip asks where to, its cost and spending money, with no loan fields');
+  await dlg.getByRole('button', { name: 'Close' }).click();
+  await page.getByRole('button', { name: /View details of Trip/ }).click();
+  await dlg.getByRole('button', { name: 'Remove goal' }).click();
+  await page.getByRole('button', { name: /View details of Car/ }).click();
+  check(await dlg.getByRole('button', { name: 'Save changes' }).isDisabled(), 'Save changes is off until something changes');
+  await dlg.locator('label:has-text("Price today") input').fill('2000000');
+  check((await dlg.innerText()).includes('₹20,00,000') === false && (await dlg.innerText()).includes('The numbers'), 'the numbers beside the form move as you type');
+  await dlg.getByRole('button', { name: 'Save changes' }).click();
   check((await main()).includes('₹20,00,000'), 'goal price edit flows into the plan');
 
   if (investing) {
@@ -174,7 +177,7 @@ const check = (ok, msg) => {
     await legacyPage.getByRole('navigation').getByRole('button', { name: 'Investments' }).click();
     check((await legacyPage.locator('main').innerText()).includes('Old savings'), 'old-key investments still load too');
   }
-  check((await legacyPage.locator('.brand').first().innerText()).includes('MyMoney'), 'app shows the MyMoney name');
+  check((await legacyPage.locator('.brand .lockup').first().getAttribute('aria-label')) === 'MyMoney', 'app shows the MyMoney logo');
   await legacyPage.close();
 
   await page.setViewportSize({ width: 390, height: 844 });

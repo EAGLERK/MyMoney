@@ -54,8 +54,8 @@ async function importCsv(page, name, text) {
     const dlg = p.getByRole('dialog', { name: /set up your profile/i });
     check(await shown(dlg), 'first visit: a "Let\'s set up your profile" popup opens');
     check(await p.evaluate(() => !!document.querySelector('dialog.welcome') && document.querySelector('dialog.welcome').matches(':modal')), 'the popup is a real modal dialog over the page');
-    check((await p.locator('.sidebar').isVisible()) && /Overview|Hi,/.test(await p.locator('main h1').innerText()), 'the Dashboard is behind it, not replaced by it');
-    check((await p.locator('dialog.welcome .brand-mark').count()) === 1 && (await p.locator('dialog.welcome .btn.primary').count()) === 1 && (await p.locator('dialog.welcome .btn').count()) === 1 && !(await p.getByText(/sample data/i).count()), 'it is laid out like the sign-in card: logo, field, one primary button, and no sample-data option');
+    check((await p.locator('.sidebar').isVisible()) && /Overview|Welcome back/.test(await p.locator('main h1').innerText()), 'the Dashboard is behind it, not replaced by it');
+    check((await p.locator('dialog.welcome .lockup').count()) === 1 && (await p.locator('dialog.welcome .btn.primary').count()) === 1 && (await p.locator('dialog.welcome .btn').count()) === 1 && !(await p.getByText(/sample data/i).count()), 'it is laid out like the sign-in card: logo, field, one primary button, and no sample-data option');
     check((await p.getByRole('button', { name: /^Notifications/ }).count()) === 0, 'no bell or alerts before setup is finished');
     await p.keyboard.press('Escape');
     check(await dlg.isVisible(), 'Escape does not dismiss it');
@@ -65,7 +65,7 @@ async function importCsv(page, name, text) {
     check(!(await dlg.isVisible()), 'starting closes the popup');
 
     // ---------- the tour ----------
-    const titles = ['Your main action', 'Bring in a bank statement', 'Plan a car, house or bike', 'Notes and lists', 'Meet Mitra', 'Alerts', 'Light or dark', 'Your data, your rules'];
+    const titles = ['Your main action', 'Bring in a bank statement', 'Plan a car, house or bike', 'Notes and lists', 'Meet Mitra', 'Alerts', 'Your data, your rules'];
     const tip = p.getByRole('dialog', { name: /Quick tour/ });
     check(await shown(tip.getByText(titles[0])), 'the tour starts by itself the first time');
     let okSteps = true;
@@ -171,10 +171,10 @@ async function importCsv(page, name, text) {
     const mtip = m.getByRole('dialog', { name: /Quick tour/ });
     check(await shown(mtip), 'phone: the tour starts');
     let phoneOk = true;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 7; i++) {
       const g = await m.evaluate(() => { const t = document.querySelector('.tour-pop').getBoundingClientRect(); const r = document.querySelector('.tour-ring').getBoundingClientRect(); return t.left >= 0 && t.right <= innerWidth && t.top >= 0 && t.bottom <= innerHeight && r.width > 20; });
       if (!g) { phoneOk = false; console.log('  phone step', i + 1, 'off screen'); }
-      if (i < 7) await mtip.getByRole('button', { name: 'Next', exact: true }).click(); else await mtip.getByRole('button', { name: 'Done' }).click();
+      if (i < 6) await mtip.getByRole('button', { name: 'Next', exact: true }).click(); else await mtip.getByRole('button', { name: 'Done' }).click();
     }
     check(phoneOk, 'phone: every tip stays inside the screen (the tab bar tips point up, the header tips point down)');
     const mb = m.getByRole('button', { name: /^Notifications/ });

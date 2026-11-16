@@ -2,9 +2,11 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { ConfirmProvider, ToastProvider } from './components/feedback';
 import { Icon, type IconName } from './components/icons';
 import { DraftsProvider, useDrafts } from './components/Drafts';
-import { Logo } from './components/Logo';
-import lockup from './assets/figma/logo.svg';
+import { LogoLockup } from './components/Logo';
+import { THEMES, type Theme } from './components/ThemeSwitch';
 import avatarRing from './assets/figma/avatar-ring.svg';
+import avatarOrb from './assets/brand/avatar-orb.png';
+import { setSearch, useSearch } from './lib/search';
 import { Notifications } from './components/Notifications';
 import { SheetsProvider } from './components/Sheets';
 import { Tour } from './components/Tour';
@@ -27,11 +29,6 @@ import { StoreProvider, useStore } from './store';
 import { installControlMotion, routeIn } from './motion';
 
 interface Tab { id: string; label: string; short: string; icon: IconName }
-const THEMES: Array<{ id: Theme; label: string; icon: IconName }> = [
-  { id: 'auto', label: 'Match my device', icon: 'monitor' },
-  { id: 'light', label: 'Light', icon: 'sun' },
-  { id: 'dark', label: 'Dark', icon: 'moon' },
-];
 /** The sections, in order. Investing is only there for people it fits, so this is read on every render, not once. */
 const allTabs = (): Tab[] => [
   { id: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'f-dashboard' },
@@ -45,7 +42,6 @@ const allTabs = (): Tab[] => [
 
 const ShowcasePage = lazy(() => import('./three/ShowcasePage'));
 
-type Theme = 'auto' | 'light' | 'dark';
 
 
 /** A first name to offer when the account already has one (Google supplies it). */
@@ -78,6 +74,7 @@ function ShellInner() {
   const ALL = allTabs(); // after the store has set the country, so Investing appears only where it fits
   const tab = ALL.some((t) => t.id === wanted) ? wanted : 'dashboard';
   const mainRef = useRef<HTMLElement>(null);
+  const search = useSearch();
   const drafts = useDrafts();
   const draftsRef = useRef(drafts);
   draftsRef.current = drafts;
@@ -139,11 +136,7 @@ function ShellInner() {
       <button className="skip" onClick={() => mainRef.current?.focus()}>Skip to main content</button>
       <div className="shell">
         <aside className="sidebar">
-          <div className="brand">
-            {/* The dark design has its own logo lockup; the light theme keeps the mark and the name. */}
-            <img className="brand-lockup" src={lockup} alt="MyMoney" />
-            <span className="brand-light"><Logo />MyMoney</span>
-          </div>
+          <div className="brand"><LogoLockup height={56} /></div>
           <nav aria-label="Sections" className="side-group">
             {ALL.map((t) => (
               <button key={t.id} className="side-link" data-tour={`nav-${t.id}`} aria-current={tab === t.id ? 'page' : undefined} onClick={() => go(t.id)}>
@@ -177,16 +170,20 @@ function ShellInner() {
         <div className="panel">
           <div className="crumbs">
             <div className="path">MyMoney<span className="crumb-rest"> &rsaquo; <b>{current.label}</b></span></div>
-            {/* A screen can put its own search box here (Transactions does). */}
-            <div id="topbar-slot" className="topbar-slot" />
+            <label className="topbar-search">
+              <Icon name="f-search" size={24} />
+              <input type="search" aria-label="Search transactions" placeholder="Search a transaction..." value={search} onChange={(e) => { setSearch(e.target.value); if (e.target.value && tab !== 'transactions') go('transactions'); }} />
+            </label>
             {/* Only for data loaded by an earlier version that had sample data: a way to see what it is and remove it. */}
             {state.txns.some((t) => t.source === 'demo') && <button className="badge watch badge-btn" title="This is sample data. Open Settings to remove it." onClick={() => go('settings')}>Sample<span className="crumb-rest"> data</span></button>}
             {state.onboarded && features.voice && <Voice go={go} theme={theme} setTheme={setTheme} tabs={ALL.map((t) => t.id as VoiceTab)} />}
+            <button className="avatar-btn" aria-label="Your profile and settings" title="Profile and settings" onClick={() => go('settings')}><img src={avatarOrb} alt="" width={60} height={60} /></button>
             {state.onboarded && <Notifications go={go} onTour={startTour} />}
-            <div className="pill-toggle theme-switch" data-tour="theme" role="group" aria-label="Colour theme">
-              {THEMES.map(({ id, label, icon }) => <button key={id} aria-pressed={theme === id} aria-label={label} title={label} onClick={() => setTheme(id)}><Icon name={icon} size={18} /></button>)}
-            </div>
-            {/* On a phone the three buttons would take a third of the header, so one button steps through the same three choices. */}
+            {/* One main action on every screen, as in the design: it adds a transaction. While there are unsaved changes, Save changes is the main one. */}
+            <button className={`btn hero add-btn ${drafts.dirty ? '' : 'primary'}`} data-tour="add" aria-label="Add transaction" onClick={() => go('add-transaction')}>
+              <Icon name="plus" size={18} /><span className="add-btn-text">Add transaction</span>
+            </button>
+            {/* The theme choice lives in Settings. On a phone, where Settings is a tab away, one button steps through the same three choices. */}
             <button className="btn icon ghost theme-cycle" data-tour="theme" aria-label={`Colour theme: ${currentTheme.label}. Tap to change.`} title={currentTheme.label} onClick={() => setTheme(THEMES[(THEMES.findIndex((t) => t.id === theme) + 1) % THEMES.length].id)}>
               <Icon name={currentTheme.icon} size={20} />
             </button>
@@ -197,7 +194,7 @@ function ShellInner() {
               : tab === 'notes' ? <Notes />
               : features.investing && tab === 'investments' ? <Investments />
               : features.investing && tab === 'plan' ? <Plan go={go} />
-              : tab === 'settings' ? <Settings />
+              : tab === 'settings' ? <Settings theme={theme} setTheme={setTheme} />
               : <Dashboard go={go} />}
           </main>
         </div>

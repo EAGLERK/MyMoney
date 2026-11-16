@@ -31,7 +31,7 @@ export function Investments() {
     <div className="page">
       <div className="row between">
         <h1>Investments</h1>
-        <button className="btn primary" onClick={() => setEditing(blank())}><Icon name="plus" size={18} />Add investment</button>
+        <button className="btn hero outline-accent" onClick={() => setEditing(blank())}><Icon name="plus" size={18} />Add investment</button>
       </div>
 
       {editing && <InvestmentForm initial={editing} onClose={() => setEditing(null)} />}

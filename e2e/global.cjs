@@ -61,7 +61,7 @@ const mitra = async (p, text) => {
     await p.getByText('Why not connect my bank account directly?').click();
     const note = await body(p);
     check(!/\bRBI\b/.test(note.replace(/Account Aggregator framework in India/, '')) && /UK and Europe/.test(note), 'it talks about more than one country, not just India');
-    await p.keyboard.press('Escape');
+    await p.getByRole('dialog', { name: 'Import transaction' }).getByRole('button', { name: 'Close' }).click();
 
     await nav(p, 'Settings');
     await shown(p.getByRole('heading', { name: 'Country and currency' }));
@@ -74,7 +74,7 @@ const mitra = async (p, text) => {
     check(!(await p.getByRole('navigation').getByRole('button', { name: 'Investments' }).count()), 'there is no Investments tab');
 
     await nav(p, 'Goals');
-    await p.getByRole('button', { name: 'Add goal' }).click();
+    await p.getByRole('button', { name: 'Add a goal' }).click();
     await p.getByRole('button', { name: /^Car/ }).click();
     await shown(p.getByText(/Car goal added/).first());
     text = await body(p);
@@ -82,6 +82,7 @@ const mitra = async (p, text) => {
     check(/placeholders, not figures for your country/.test(text), 'and say the loan rates are placeholders');
     check(!/\bEMIs?\b/.test(text) && /Loan payment/.test(text), 'the page says "loan payment", never "EMI"');
     check(!/\bRs\b|₹|RBI|lakh|crore/i.test(text), 'and nothing in rupees or about India');
+    await p.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
 
     await nav(p, 'Settings');
     await p.getByLabel('Currency').selectOption('EUR');
@@ -119,7 +120,7 @@ const mitra = async (p, text) => {
     check((await p.getByLabel('Where are you?').inputValue()) === 'GB', 'a British browser is offered the United Kingdom');
     await startAs(p, 'Alex');
     await nav(p, 'Notes');
-    await p.getByRole('button', { name: 'New note' }).click();
+    await p.getByRole('button', { name: 'Add a note' }).click();
     await p.getByRole('button', { name: /^Things to sell/ }).click();
     check(await shown(p.locator('input[value*="Asking price (£)"]').first()), 'a "things to sell" table has a pound column');
     await ctx.close();
@@ -134,12 +135,13 @@ const mitra = async (p, text) => {
     check(/Tax on this income \(new regime/.test(text) && /Salaried \(Rs 75,000/.test(text), 'the tax estimate is offered in India');
     check(/Varies a lot by city and locality/.test(text) && !/Placeholder, not from your country/.test(text), 'India keeps its own sourced assumptions');
     await nav(p, 'Goals');
-    await p.getByRole('button', { name: 'Add goal' }).click();
+    await p.getByRole('button', { name: 'Add a goal' }).click();
     await p.getByRole('button', { name: /^House/ }).click();
     await shown(p.getByText(/House goal added/).first());
-    await p.getByRole('button', { name: 'Details', exact: true }).click();
+    await p.getByText('Checks and options').click();
     text = await body(p);
     check(/Lender minimum down payment/.test(text) && /\bEMI\b/.test(text) && /₹/.test(text), 'India keeps the lender-minimum rule, the word EMI and rupees');
+    await p.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
     await ctx.close();
 
     // ---------- data saved before the app was global ----------

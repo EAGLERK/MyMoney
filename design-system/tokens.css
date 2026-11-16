@@ -34,6 +34,9 @@
   --s3: #1baf7a;
   --s4: #eda100;
   --s5: #e87ba4;
+  --chart-deep: #006300;
+  --chart-mid: #1a8e00;
+  --chart-light: #4fd1a1;
   --ds-space-2xs: 2px;
   --ds-space-xs: 4px;
   --ds-space-sm: 8px;
@@ -113,6 +116,9 @@
     --s3: #199e70;
     --s4: #c98500;
     --s5: #d55181;
+    --chart-deep: #006300;
+    --chart-mid: #1a8e00;
+    --chart-light: #4fd1a1;
   }
 }
 :root[data-theme='dark'] {
@@ -148,6 +154,9 @@
   --s3: #199e70;
   --s4: #c98500;
   --s5: #d55181;
+  --chart-deep: #006300;
+  --chart-mid: #1a8e00;
+  --chart-light: #4fd1a1;
 }
 /* Fixed scopes, so one page can show both themes at once. */
 .ds-light { color-scheme: light; background: var(--page); color: var(--text);
@@ -182,6 +191,9 @@
   --s3: #1baf7a;
   --s4: #eda100;
   --s5: #e87ba4;
+  --chart-deep: #006300;
+  --chart-mid: #1a8e00;
+  --chart-light: #4fd1a1;
   --ring-soft: color-mix(in srgb, var(--accent) 35%, transparent);
   --feature-bg: linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, var(--surface)), var(--surface) 75%);
   --feature-border: var(--border);
@@ -218,6 +230,9 @@
   --s3: #199e70;
   --s4: #c98500;
   --s5: #d55181;
+  --chart-deep: #006300;
+  --chart-mid: #1a8e00;
+  --chart-light: #4fd1a1;
   --ring-soft: color-mix(in srgb, var(--accent) 35%, transparent);
   --feature-bg: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface) 75%);
   --feature-border: var(--border);
