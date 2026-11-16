@@ -42,7 +42,7 @@ export interface Profile {
   currency?: string;
 }
 
-export type GoalKind = 'car' | 'house' | 'bike' | 'other';
+export type GoalKind = 'car' | 'house' | 'bike' | 'trip' | 'other';
 
 export interface Goal {
   id: string;

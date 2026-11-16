@@ -11,15 +11,16 @@ export const GOAL_DEFAULTS: Record<GoalKind, Pick<Goal, 'downPaymentPct' | 'loan
   car: { name: 'Car', downPaymentPct: 20, loanYears: 4, extraCostPct: 12, rateKey: 'carLoan', growthKey: 'carGrowth' },
   house: { name: 'House', downPaymentPct: 20, loanYears: 20, extraCostPct: 7, rateKey: 'homeLoan', growthKey: 'houseGrowth' },
   bike: { name: 'Bike', downPaymentPct: 20, loanYears: 2, extraCostPct: 10, rateKey: 'bikeLoan', growthKey: 'bikeGrowth' },
+  trip: { name: 'Trip', downPaymentPct: 100, loanYears: 0, extraCostPct: 10, rateKey: 'fd', growthKey: 'inflation' },
   other: { name: 'Goal', downPaymentPct: 100, loanYears: 0, extraCostPct: 0, rateKey: 'fd', growthKey: 'inflation' },
 };
 
-export const DEFAULT_PRICE: Record<GoalKind, number> = { car: 1_000_000, house: 6_000_000, bike: 150_000, other: 500_000 };
+export const DEFAULT_PRICE: Record<GoalKind, number> = { car: 1_000_000, house: 6_000_000, bike: 150_000, trip: 150_000, other: 500_000 };
 
 /** A new goal with the usual starting values for its kind. */
 export function newGoal(kind: GoalKind, id: string, today: string, rates: Rates): Goal {
   const g = GOAL_DEFAULTS[kind];
-  return { id, kind, name: g.name, price: DEFAULT_PRICE[kind], targetMonth: addMonths(today.slice(0, 7), kind === 'house' ? 84 : 24), downPaymentPct: g.downPaymentPct, loanRate: rates[g.rateKey] ?? 9, loanYears: g.loanYears, extraCostPct: g.extraCostPct, saved: 0 };
+  return { id, kind, name: g.name, price: DEFAULT_PRICE[kind], targetMonth: addMonths(today.slice(0, 7), kind === 'house' ? 84 : kind === 'trip' ? 12 : 24), downPaymentPct: g.downPaymentPct, loanRate: rates[g.rateKey] ?? 9, loanYears: g.loanYears, extraCostPct: g.extraCostPct, saved: 0 };
 }
 
 export interface RuleCheck {
@@ -68,17 +69,18 @@ export function monthsUntil(targetMonth: string, today: string): number {
 }
 
 /** Pick where goal money should sit, by how long it has to wait. Returns after-tax annual return in %. */
-export function goalVehicle(months: number, rates: Rates, marginal: number): { id: string; name: string; ret: number } {
+/** `short` keeps money for a fixed-date spend (a trip) out of equity however far away the date is. */
+export function goalVehicle(months: number, rates: Rates, marginal: number, short = false): { id: string; name: string; ret: number } {
   // The deposit and fund returns below are India's. Anywhere else the plan assumes money sits in a savings account earning what the person entered (0 until they do).
   if (!isIndia(moneyContext().country)) return { id: 'savings', name: 'Savings account', ret: rates.fd ?? 0 };
-  const y = months / 12;
+  const y = (short ? Math.min(months, 60) : months) / 12;
   if (y <= 2) return { id: 'rd', name: 'Recurring deposit / short FD', ret: afterTaxRate(effectiveYield(rates.rd), marginal) };
   if (y <= 5) return { id: 'shortDebt', name: 'Short-duration debt fund', ret: postTaxReturn(INSTRUMENTS.find((i) => i.id === 'shortDebt')!, rates, marginal, y) };
   if (y <= 8) return { id: 'hybrid', name: 'Hybrid / balanced advantage fund', ret: equityPostTax(rates.hybrid, y) };
   return { id: 'index', name: 'Nifty 50 index fund', ret: equityPostTax(rates.index, y) };
 }
 
-const TENURES: Record<GoalKind, number[]> = { car: [3, 4, 5, 7], house: [10, 15, 20, 25, 30], bike: [1, 2, 3, 4], other: [] };
+const TENURES: Record<GoalKind, number[]> = { car: [3, 4, 5, 7], house: [10, 15, 20, 25, 30], bike: [1, 2, 3, 4], trip: [], other: [] };
 
 export interface PlanContext {
   today: string;
@@ -102,7 +104,7 @@ export function planGoal(goal: Goal, ctx: PlanContext): GoalPlan {
   const loanMonths = Math.round(goal.loanYears * 12);
   const e = emi(loanAmount, goal.loanRate, loanMonths);
   const interest = totalInterest(loanAmount, goal.loanRate, loanMonths);
-  const veh = goalVehicle(months, ctx.rates, ctx.marginal);
+  const veh = goalVehicle(months, ctx.rates, ctx.marginal, goal.kind === 'trip');
   const need = requiredMonthly(upfront, goal.saved, veh.ret, months);
   const { foir, verdict } = affordability(ctx.existingEmi + e, ctx.monthlyIncome);
 
@@ -130,6 +132,9 @@ export function planGoal(goal: Goal, ctx: PlanContext): GoalPlan {
     checks.push({ ok: ctx.annualIncome > 0 && goal.price <= ctx.annualIncome * 5, label: 'Price within 5x annual income', detail: ctx.annualIncome > 0 ? `Today's price is ${(goal.price / ctx.annualIncome).toFixed(1)}x annual income. Above 5x, the ${emiWord()} usually crowds out everything else.` : 'Add your annual income in Settings to check this.' });
     checks.push({ ok: goal.loanYears <= 20, label: 'Tenure of 20 years or less', detail: `Planned tenure is ${goal.loanYears} years. Each extra 5 years adds a large chunk of interest. Prepay when you can.` });
   }
+  if (goal.kind === 'trip') {
+    checks.push({ ok: goal.extraCostPct >= 10, label: 'Room for spending money and insurance', detail: `You have ${goal.extraCostPct}% on top of the price. Travel insurance, visas and daily spending usually add 10-15%.` });
+  }
   if (months <= 0 && goal.saved < upfront) {
     checks.push({ ok: false, label: 'Target date has arrived', detail: `You have ${money(goal.saved)} saved against ${money(upfront)} needed. Move the date out.` });
   }
@@ -152,7 +157,7 @@ export function earliestMonths(goal: Goal, monthly: number, ctx: PlanContext, ca
   const d = GOAL_DEFAULTS[goal.kind];
   const growth = ctx.rates[d.growthKey] ?? 5;
   const upfrontAt = (m: number) => inflate(goal.price, growth, m / 12) * ((goal.downPaymentPct + goal.extraCostPct) / 100);
-  const vehicleRet = (m: number) => goalVehicle(m, ctx.rates, ctx.marginal).ret;
+  const vehicleRet = (m: number) => goalVehicle(m, ctx.rates, ctx.marginal, goal.kind === 'trip').ret;
   let bal = goal.saved;
   for (let m = 1; m <= cap; m++) {
     bal = bal * (1 + vehicleRet(m) / 1200) + monthly;

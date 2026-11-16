@@ -172,7 +172,7 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     const goalsBefore = (await p.locator('text=/Price today/').count());
     await p.getByRole('button', { name: 'Add goal' }).click();
     const options = await p.getByRole('group', { name: 'Choose what you are saving for' }).getByRole('button').allInnerTexts();
-    check(options.length === 4, `the chooser offers four labelled options (${options.map((o) => o.split('\n')[0]).join(', ')})`);
+    check(options.length === 5, `the chooser offers five labelled options (${options.map((o) => o.split('\n')[0]).join(', ')})`);
     await p.getByRole('button', { name: /^Bike/ }).click();
     check(await shown(p.locator('.toast', { hasText: 'Bike goal added' })), 'picking a type adds the goal and confirms it');
     check((await p.locator('text=/Price today/').count()) === goalsBefore + 1, 'the new goal card appears');

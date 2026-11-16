@@ -72,7 +72,7 @@ export function validateCmd(x: unknown, today: string): Cmd | null {
     case 'setAssumption': { const label = str(x.label, 60); const value = typeof x.value === 'number' && x.value >= 0 && x.value <= 100 ? x.value : null; return label && value !== null ? { t, label, value } : null; }
     case 'goalPrice': { const goal = str(x.goal, 40); const price = num(x.price, 0, 1_000_000_000_000); return goal && price !== null ? { t, goal, price } : null; }
     case 'goalMonth': { const goal = str(x.goal, 40); const month = typeof x.month === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(x.month) ? x.month : null; return goal && month ? { t, goal, month } : null; }
-    case 'goalAdd': { const kind = oneOf(x.kind, ['car', 'house', 'bike'] as const); return kind ? { t, kind } : null; }
+    case 'goalAdd': { const kind = oneOf(x.kind, ['car', 'house', 'bike', 'trip'] as const); return kind ? { t, kind } : null; }
     case 'goalDelete': { const goal = str(x.goal, 40); return goal ? { t, goal } : null; }
     default: return null;
   }

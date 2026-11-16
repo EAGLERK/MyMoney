@@ -127,6 +127,9 @@ describe('settings and goals', () => {
     expect(p('set house price to 80 lakh')).toEqual({ t: 'goalPrice', goal: 'house', price: 8000000 });
     expect(p('add a car goal')).toEqual({ t: 'goalAdd', kind: 'car' });
     expect(p('delete my bike goal')).toEqual({ t: 'goalDelete', goal: 'bike' });
+    expect(p('add a vacation goal')).toEqual({ t: 'goalAdd', kind: 'trip' });
+    expect(p('add a trip')).toEqual({ t: 'goalAdd', kind: 'trip' });
+    expect(p('add 500 for travel')).not.toMatchObject({ t: 'goalAdd' });
   });
   it('sets an assumption', () => {
     expect(p('set inflation to 6 percent')).toEqual({ t: 'setAssumption', label: 'inflation', value: 6 });

@@ -122,6 +122,13 @@ const check = (ok, msg) => {
   check((await page.locator('.goal-facts .badge').count()) === 2, 'each goal has its own one-line verdict');
   check(!(await page.getByText('Sanity checks').count()), 'the long detail is hidden until Details is pressed');
   await page.getByRole('button', { name: 'Remove', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Add goal' }).click();
+  await page.getByRole('button', { name: /^Trip or vacation/ }).click();
+  check((await page.locator('.goal-showcase').count()) === 1 && (await page.getByRole('heading', { name: /^Trip/ }).count()) >= 0 && await page.getByText('Cost today').count() === 1, 'a trip goal is added: cash cost, and no 3D scene or loan figures');
+  await page.getByRole('button', { name: 'Edit', exact: true }).last().click();
+  check(!(await page.getByText('Loan rate (%)').count()) && !(await page.getByText('Down payment (%)').count()) && await page.getByText('Spending money, visa, insurance (%)').count() === 1, 'its editor shows cost, month and spending money, with no loan fields');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove', exact: true }).last().click();
   await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await page.locator('label:has-text("Price today") input').fill('2000000');
   check((await main()).includes('₹20,00,000'), 'goal price edit flows into the plan');

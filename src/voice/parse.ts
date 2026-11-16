@@ -2,7 +2,7 @@ import { extractDate, parseMonthYear } from './dates';
 import { findAmount, parseAmountPhrase } from './numbers';
 
 export type Tab = 'dashboard' | 'transactions' | 'goals' | 'notes' | 'settings' | 'investments' | 'plan';
-export type GoalWord = 'car' | 'house' | 'bike';
+export type GoalWord = 'car' | 'house' | 'bike' | 'trip';
 export type ProfileField = 'name' | 'age' | 'monthlyIncome' | 'monthlyExpenses' | 'annualGrossIncome';
 
 export type Cmd =
@@ -58,7 +58,7 @@ const TABS: Array<[RegExp, Tab]> = [
 const tabOf = (s: string): Tab | null => TABS.find(([re]) => re.test(s))?.[1] ?? null;
 
 export const goalWord = (s: string): GoalWord | null =>
-  /\b(car|cars|vehicle)\b/.test(s) ? 'car' : /\b(house|home|flat|apartment)\b/.test(s) ? 'house' : /\b(bike|bikes|motorcycle|motorbike|scooter)\b/.test(s) ? 'bike' : null;
+  /\b(car|cars|vehicle)\b/.test(s) ? 'car' : /\b(house|home|flat|apartment)\b/.test(s) ? 'house' : /\b(bike|bikes|motorcycle|motorbike|scooter)\b/.test(s) ? 'bike' : /\b(trip|trips|vacation|holiday)\b/.test(s) ? 'trip' : null;
 
 /** Yes or no, for a pending confirmation. Null when it is neither. */
 export function parseAnswer(raw: string): 'yes' | 'no' | null {

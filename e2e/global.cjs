@@ -135,6 +135,7 @@ const mitra = async (p, text) => {
     await p.getByRole('button', { name: 'Add goal' }).click();
     await p.getByRole('button', { name: /^House/ }).click();
     await shown(p.getByText(/House goal added/).first());
+    await p.getByRole('button', { name: 'Details', exact: true }).click();
     text = await body(p);
     check(/Lender minimum down payment/.test(text) && /\bEMI\b/.test(text) && /₹/.test(text), 'India keeps the lender-minimum rule, the word EMI and rupees');
     await ctx.close();

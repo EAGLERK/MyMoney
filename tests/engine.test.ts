@@ -9,7 +9,7 @@ import { categorize } from '../src/engine/categorize';
 import { averages, insights, summarize } from '../src/engine/cashflow';
 import { corpusAfterTax, equityPostTax, INSTRUMENTS, rankInstruments } from '../src/engine/instruments';
 import { buildPortfolio, currentValue, maturity } from '../src/engine/portfolio';
-import { planGoal, earliestMonths } from '../src/engine/goals';
+import { planGoal, earliestMonths, newGoal } from '../src/engine/goals';
 import { buildAdvice, equityShare, projectWealth } from '../src/engine/advisor';
 import type { Goal, Investment, Profile, Txn } from '../src/engine/types';
 
@@ -258,6 +258,19 @@ describe('goals', () => {
     // 26k EMI on a 1.5L income is 17%: the strict 10% car rule fails, everything else passes
     expect(p.checks.filter((c) => !c.ok).map((c) => c.label)).toEqual(['Car EMI within 10% of income']);
     expect(p.vehicleId).toBe('rd');
+  });
+  it('a trip is paid in cash, has no loan, and never goes into equity however far away it is', () => {
+    const trip: Goal = { id: 't', kind: 'trip', name: 'Goa', price: 100_000, targetMonth: '2036-10', downPaymentPct: 100, loanRate: 0, loanYears: 0, extraCostPct: 10, saved: 0 };
+    const far = planGoal(trip, ctx);
+    expect(far.loanAmount).toBe(0);
+    expect(far.emi).toBe(0);
+    close(far.upfront, far.priceAtTarget * 1.1, 0.01);
+    expect(far.vehicleId).not.toBe('index');
+    expect(far.vehicleId).not.toBe('hybrid');
+    expect(planGoal({ ...trip, kind: 'other' }, ctx).vehicleId).toBe('index');
+    expect(far.checks.every((c) => c.ok)).toBe(true);
+    expect(planGoal({ ...trip, extraCostPct: 0 }, ctx).checks.map((c) => c.label)).toEqual(['Room for spending money and insurance']);
+    expect(newGoal('trip', 'x', '2026-10-29', rates)).toMatchObject({ kind: 'trip', name: 'Trip', targetMonth: '2027-10', downPaymentPct: 100, loanYears: 0 });
   });
   it('required monthly actually reaches the up-front cash', () => {
     const p = planGoal(car, ctx);

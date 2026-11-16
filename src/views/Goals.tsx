@@ -17,6 +17,7 @@ const CHOICES: Array<{ kind: GoalKind; icon: IconName; title: string; hint: stri
   { kind: 'car', icon: 'car', title: 'Car', hint: 'Down payment, loan and running costs' },
   { kind: 'house', icon: 'house', title: 'House', hint: 'Down payment, home loan and fees' },
   { kind: 'bike', icon: 'bike', title: 'Bike', hint: 'A motorbike or scooter' },
+  { kind: 'trip', icon: 'plane', title: 'Trip or vacation', hint: 'Flights, stay and spending money, saved in cash' },
   { kind: 'other', icon: 'target', title: 'Something else', hint: 'Any one-off purchase, saved for in cash' },
 ];
 
@@ -80,7 +81,7 @@ export function Goals() {
         <Card>
           <div className="empty-cta">
             <h2>No goals yet</h2>
-            <p className="sub">Add a car, house or bike. You will see the price at your target date, the cash needed up front, the monthly {emiWord()}, the total interest, and the monthly saving that gets you there.</p>
+            <p className="sub">Add a car, house, bike or trip. You will see the price at your target date, the cash needed up front, the monthly {emiWord()}, the total interest, and the monthly saving that gets you there.</p>
             <button className="btn" onClick={() => setChoosing(true)}><Icon name="plus" size={18} />Add your first goal</button>
           </div>
         </Card>
@@ -104,6 +105,7 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
   const months = earliestMonths(goal, pace, ctx);
   const tone = p.verdict === 'comfortable' ? 'good' : p.verdict === 'stretch' ? 'watch' : 'bad';
   const hasLoan = p.loanAmount > 0;
+  const cash = goal.kind === 'trip' || goal.kind === 'other';
   const short = p.requiredMonthly - surplus;
   const status: { tone: 'good' | 'watch' | 'bad'; text: string } = short > 0
     ? { tone: 'bad', text: `${money(short)} a month more than your surplus` }
@@ -113,14 +115,14 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
   return (
     <Card
       title={<span>{goal.name} <span className="muted" style={{ fontWeight: 400 }}>· {monthLabel(goal.targetMonth)} ({monthsText(p.months)} away)</span></span>}
-      sub={`Price today ${money(goal.price)}`}
+      sub={`${goal.kind === "trip" ? "Cost" : "Price"} today ${money(goal.price)}`}
       right={<div className="row-actions"><button className="btn small" aria-expanded={edit} onClick={() => setEdit(!edit)}><Icon name={edit ? 'close' : 'pencil'} size={16} />{edit ? 'Done' : 'Edit'}</button><button className="btn small danger" onClick={() => { dispatch({ type: 'deleteGoal', id: goal.id }); toast(`${goal.name} goal removed`, { undo: () => dispatch({ type: 'upsertGoal', goal }) }); }}><Icon name="trash" size={16} />Remove</button></div>}
     >
       <div className="goal-summary">
-        {goal.kind !== 'other' && (
+        {(goal.kind === 'car' || goal.kind === 'house' || goal.kind === 'bike') && (
           <div className="showcase goal-showcase" role="group" aria-label={`${goal.name}, drag to look around`}>
             <Suspense fallback={null}>
-              <Showcase3D only={goal.kind} />
+              <Showcase3D only={goal.kind as 'car' | 'house' | 'bike'} />
             </Suspense>
           </div>
         )}
@@ -140,12 +142,12 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
       {edit && (
         <div className="form-grid" style={{ marginBottom: 16 }}>
           <Field label="Name"><input value={goal.name} onChange={(e) => set({ name: e.target.value })} /></Field>
-          <Num label={`Price today (${cur()})`} value={goal.price} onChange={(n) => set({ price: n })} min={0} />
-          <Field label="Target month"><input type="month" value={goal.targetMonth} onChange={(e) => e.target.value && set({ targetMonth: e.target.value })} /></Field>
-          <Num label="Down payment (%)" value={goal.downPaymentPct} onChange={(n) => set({ downPaymentPct: Math.min(100, n) })} min={0} />
-          <Num label="Loan rate (%)" value={goal.loanRate} onChange={(n) => set({ loanRate: n })} min={0} hint="Ask your lender for the real quote" />
-          <Num label="Loan tenure (years)" value={goal.loanYears} onChange={(n) => set({ loanYears: n })} min={0} />
-          <Num label="Fees, tax, insurance (%)" value={goal.extraCostPct} onChange={(n) => set({ extraCostPct: n })} min={0} hint={goal.kind === 'house' ? 'Stamp duty + registration, varies by state' : 'Road tax, registration, insurance'} />
+          <Num label={goal.kind === 'trip' ? `Total cost today (${cur()})` : `Price today (${cur()})`} value={goal.price} onChange={(n) => set({ price: n })} min={0} hint={goal.kind === 'trip' ? 'Flights, stay, food and activities' : undefined} />
+          <Field label={goal.kind === 'trip' ? 'Travel month' : 'Target month'}><input type="month" value={goal.targetMonth} onChange={(e) => e.target.value && set({ targetMonth: e.target.value })} /></Field>
+          {!cash && <Num label="Down payment (%)" value={goal.downPaymentPct} onChange={(n) => set({ downPaymentPct: Math.min(100, n) })} min={0} />}
+          {!cash && <Num label="Loan rate (%)" value={goal.loanRate} onChange={(n) => set({ loanRate: n })} min={0} hint="Ask your lender for the real quote" />}
+          {!cash && <Num label="Loan tenure (years)" value={goal.loanYears} onChange={(n) => set({ loanYears: n })} min={0} />}
+          {goal.kind !== 'other' && <Num label={goal.kind === 'trip' ? 'Spending money, visa, insurance (%)' : 'Fees, tax, insurance (%)'} value={goal.extraCostPct} onChange={(n) => set({ extraCostPct: n })} min={0} hint={goal.kind === 'house' ? 'Stamp duty + registration, varies by state' : goal.kind === 'trip' ? 'On top of the cost above' : 'Road tax, registration, insurance'} />}
           <Num label={`Already saved (${cur()})`} value={goal.saved} onChange={(n) => set({ saved: n })} min={0} />
         </div>
       )}
@@ -156,14 +158,14 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
         <div>
           <h3 style={{ marginBottom: 8 }}>The numbers</h3>
           <dl className="kv">
-            <dt>Price at {monthLabel(goal.targetMonth)} <span className="muted small">(+{d(ctx.rates[growthKey])}%/yr)</span></dt><dd>{money(p.priceAtTarget)}</dd>
-            <dt>Down payment ({goal.downPaymentPct}%)</dt><dd>{money(p.downPayment)}</dd>
-            <dt>Fees, tax, insurance ({goal.extraCostPct}%)</dt><dd>{money(p.extraCost)}</dd>
+            <dt>{goal.kind === 'trip' ? 'Cost' : 'Price'} at {monthLabel(goal.targetMonth)} <span className="muted small">(+{d(ctx.rates[growthKey])}%/yr)</span></dt><dd>{money(p.priceAtTarget)}</dd>
+            {!cash && <><dt>Down payment ({goal.downPaymentPct}%)</dt><dd>{money(p.downPayment)}</dd></>}
+            {goal.kind !== 'other' && <><dt>{goal.kind === 'trip' ? 'Spending money, visa, insurance' : 'Fees, tax, insurance'} ({goal.extraCostPct}%)</dt><dd>{money(p.extraCost)}</dd></>}
             <dt className="strong">Cash needed on the day</dt><dd className="strong">{money(p.upfront)}</dd>
             {hasLoan && <><dt>Loan</dt><dd>{money(p.loanAmount)}</dd>
               <dt>{emiWord(true)} ({goal.loanRate}% · {goal.loanYears} yr)</dt><dd className="strong">{money(p.emi)}</dd>
               <dt>Total interest</dt><dd className={p.interest > p.priceAtTarget * 0.25 ? 'watch' : ''}>{money(p.interest)}</dd></>}
-            <dt>Total cost of ownership</dt><dd>{money(p.lifetimeCost)}</dd>
+            {!cash && <><dt>Total cost of ownership</dt><dd>{money(p.lifetimeCost)}</dd></>}
           </dl>
         </div>
         <div className="stack">
@@ -174,12 +176,12 @@ function GoalCard({ goal, ctx, surplus, others }: { goal: Goal; ctx: PlanContext
                 ? <>Put aside <b className="num">{money(p.requiredMonthly)}</b> a month in a <b>{p.vehicle.toLowerCase()}</b> (about {pct(p.vehicleReturn)} a year after tax). </>
                 : <>Put aside <b className="num">{money(p.requiredMonthly)}</b> a month. This assumes your savings grow about {pct(p.vehicleReturn)} a year after tax; saving more or sooner shortens the wait. </>
               : <>You already have enough set aside for the up-front cash. </>}
-            {features.investing && (p.years < 3 ? 'The date is under 3 years away, so keep this out of equity: a market fall right before purchase would hurt.' : 'The date is 3+ years away, so some market exposure is reasonable.')}
+            {features.investing && (goal.kind === 'trip' ? 'A trip date does not move, so keep this out of equity.' : p.years < 3 ? 'The date is under 3 years away, so keep this out of equity: a market fall right before purchase would hurt.' : 'The date is 3+ years away, so some market exposure is reasonable.')}
           </div></div>
           <div className="row">
             <span className="sub">If I save</span>
             <div style={{ width: 130 }}><NumInput className="inline-input" value={pace} onChange={setPace} aria-label="Monthly saving" /></div>
-            <span className="sub">a month, I can pay the up-front cash in <b>{monthsText(months)}</b>{Number.isFinite(months) ? ` (${monthLabel(addMonths(ctx.today.slice(0, 7), months))})` : ''}.</span>
+            <span className="sub">a month, I can pay the {goal.kind === 'trip' ? 'trip cost' : 'up-front cash'} in <b>{monthsText(months)}</b>{Number.isFinite(months) ? ` (${monthLabel(addMonths(ctx.today.slice(0, 7), months))})` : ''}.</span>
           </div>
         </div>
       </div>
