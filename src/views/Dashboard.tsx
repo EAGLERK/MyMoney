@@ -108,7 +108,7 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
     <div className="page" ref={page}>
       <div className="page-head">
         <div>
-          <h1>{greeting}</h1>
+          <h1 className="display">{greeting}</h1>
           <div className="sub">Overview of your money for {monthLong(month)}</div>
         </div>
         <div className="month-pill" role="group" aria-label="Month">
