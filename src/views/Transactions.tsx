@@ -268,25 +268,35 @@ function AddForm({ onDone }: { onDone: () => void }) {
     onDone();
   };
 
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const el = ref.current; if (el && !el.open) { el.showModal(); dialogIn(el); } }, []);
+
   return (
-    <Card title="New transaction" sub="Fields marked * are required. It is added to the list below and kept when you press Save changes.">
-      <form onSubmit={(e) => { e.preventDefault(); if (!missing) add(); }}>
+    <dialog ref={ref} className="modal add-dialog" aria-labelledby="add-title" onCancel={(e) => { e.preventDefault(); onDone(); }} onClick={(e) => { if (e.target === ref.current) onDone(); }}>
+      <form className="import-body" onSubmit={(e) => { e.preventDefault(); if (!missing) add(); }}>
+        <div className="import-head">
+          <h2 id="add-title">New transaction</h2>
+          <button className="btn icon small ghost" type="button" aria-label="Close" onClick={onDone}><Icon name="f-close" size={20} /></button>
+        </div>
+        <p className="sub">Fields marked * are required. It is added to the list and kept when you press Save changes.</p>
         <div className="form-grid">
           <Field label="Type"><select value={type} onChange={(e) => { setType(e.target.value as 'income' | 'expense'); setCat(''); }}><option value="expense">Expense</option><option value="income">Income</option></select></Field>
           <Field label="Date" required><input type="date" value={date} max={todayISO()} onClick={openCalendar} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Description"><input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={isIndia(moneyContext().country) ? 'UPI-Swiggy, Salary, ...' : 'Coffee shop, Salary, ...'} /></Field>
+          <Field label="Description" wide><input autoFocus value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={isIndia(moneyContext().country) ? 'UPI-Swiggy, Salary, ...' : 'Coffee shop, Salary, ...'} /></Field>
           <Num label={`Amount (${cur()})`} value={amount} onChange={setAmount} min={0} required />
           <Field label="Category" hint={cat ? undefined : 'Picked from the description'}>
             <select value={chosen} onChange={(e) => setCat(e.target.value)}>{(type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => <option key={c}>{c}</option>)}</select>
           </Field>
         </div>
-        <div className="form-actions">
-          <button className={`btn ${drafts.dirty ? '' : 'primary'}`} type="submit" disabled={!!missing}>Add to list</button>
-          <button className="btn" type="button" onClick={onDone}>Cancel</button>
-          {missing && <span className="why" role="status">{missing}</span>}
+        <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
+          {missing ? <span className="why" role="status">{missing}</span> : <span />}
+          <span className="row">
+            <button className="btn" type="button" onClick={onDone}>Cancel</button>
+            <button className={`btn ${drafts.dirty ? '' : 'primary'}`} type="submit" disabled={!!missing}>Add to list</button>
+          </span>
         </div>
       </form>
-    </Card>
+    </dialog>
   );
 }
 

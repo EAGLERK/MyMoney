@@ -1173,3 +1173,6 @@ dialog.goal-dialog { width: min(1100px, calc(100vw - 32px)); max-height: calc(10
 @media (max-width: 599px) { .range-toggle { width: 100%; } .range-toggle button { flex: 1; padding: 0 4px; font-size: 16px; } }
 .dash-row .hbar-row { padding: 8px 0; }
 @media (max-width: 899px) { .range-toggle button { min-height: 44px; } .card-head .btn.danger-text { min-height: 44px; } }
+dialog.add-dialog { width: min(560px, calc(100vw - 32px)); border-radius: 16px; }
+dialog.add-dialog .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+dialog.add-dialog .form-grid .span-2 { grid-column: 1 / -1; }

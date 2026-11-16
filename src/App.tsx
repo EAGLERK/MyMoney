@@ -135,7 +135,7 @@ function ShellInner() {
       <button className="skip" onClick={() => mainRef.current?.focus()}>Skip to main content</button>
       <div className="shell">
         <aside className="sidebar">
-          <div className="brand"><LogoLockup height={56} /></div>
+          <div className="brand"><LogoLockup height={40} /></div>
           <nav aria-label="Sections" className="side-group">
             {ALL.map((t) => (
               <button key={t.id} className="side-link" data-tour={`nav-${t.id}`} aria-current={tab === t.id ? 'page' : undefined} onClick={() => go(t.id)}>

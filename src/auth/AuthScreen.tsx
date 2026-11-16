@@ -19,7 +19,7 @@ function Shell({ title, sub, children }: { title: string; sub?: string; children
     <div className="authwrap">
       <div className="authcard card">
         <div className="brand" style={{ padding: 0 }}>
-          <LogoLockup height={44} />
+          <LogoLockup height={36} />
         </div>
         <div>
           <h1 style={{ marginBottom: 4 }}>{title}</h1>

@@ -162,6 +162,11 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     const imp = p.getByRole('dialog', { name: 'Import transaction' });
     check(await shown(imp) && await shown(imp.getByRole('button', { name: /Import a \.csv file/ })) && await shown(imp.getByLabel('Google Sheet link')), 'import: one dialog offers a file and a Google Sheet link');
     await p.keyboard.press('Escape');
+    await p.getByRole('button', { name: 'Add transaction' }).click();
+    const addDlg = p.getByRole('dialog', { name: 'New transaction' });
+    check(await shown(addDlg) && await shown(addDlg.getByLabel('Description', { exact: true })), 'add transaction: the top bar button opens a popup form');
+    await addDlg.getByRole('button', { name: 'Cancel' }).click();
+    check(!(await p.getByRole('dialog').count()), 'and Cancel closes it');
     check((await p.locator('.side-foot .user b').innerText()).trim().length > 0 && (await p.locator('.side-foot .avatar').innerText()).trim().length >= 1, 'sidebar: shows who is using the app, with initials');
     await p.getByRole('button', { name: 'Delete all' }).click();
     check(await shown(p.getByRole('dialog')) && (await cssMotion()) === 0, 'dialog: opens with no CSS animation');
