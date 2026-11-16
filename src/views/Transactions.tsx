@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import sheetsArt from '../assets/figma/sheets.png';
+import { dialogIn } from '../motion';
 import { DEFAULT_CATEGORIES, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../engine/categories';
 import { categorize } from '../engine/categorize';
 import { monthsWithData } from '../engine/cashflow';
@@ -13,7 +16,23 @@ import { useConfirm, useToast } from '../components/feedback';
 import { money, monthLabel, todayISO, uid, cur, moneyExact } from '../lib/format';
 import { useStore } from '../store';
 
-const PAGE = 100;
+const PAGE = 20;
+
+/** A whole amount without decimals, anything else with them, so paise are never hidden. */
+const amountText = (n: number): string => (Number.isInteger(n) ? money(n) : moneyExact(n));
+
+/** True from the width where the sidebar and top bar are shown. */
+function useWide(): boolean {
+  const q = '(min-width: 900px)';
+  const [wide, setWide] = useState(() => (typeof matchMedia === 'function' ? matchMedia(q).matches : true));
+  useEffect(() => {
+    const m = matchMedia(q);
+    const on = () => setWide(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return wide;
+}
 
 /** Opens the browser's calendar when the date box is clicked (browsers otherwise open it only from the small icon). */
 const openCalendar = (e: { currentTarget: HTMLInputElement }) => {
@@ -31,8 +50,14 @@ export function Transactions({ openAdd = false, onCloseAdd }: { openAdd?: boolea
   const [category, setCategory] = useState('all');
   const [q, setQ] = useState('');
   const [source, setSource] = useState('all');
-  const [limit, setLimit] = useState(PAGE);
+  const [page, setPage] = useState(1);
   const [adding, setAdding] = useState(openAdd);
+  const [importing, setImporting] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [editing, setEditing] = useState<ReadonlySet<string>>(new Set());
+  const wide = useWide();
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => { setSlot(document.getElementById('topbar-slot')); }, []);
   const months = useMemo(() => monthsWithData(state.txns).reverse(), [state.txns]);
   // Where rows came from (a statement file, a Google Sheet, or one tab of a sheet). The filter only appears when there is more than one.
   const sources = useMemo(() => [...new Set(state.txns.map((t) => t.file).filter((f): f is string => !!f))].sort(), [state.txns]);
@@ -53,8 +78,11 @@ export function Transactions({ openAdd = false, onCloseAdd }: { openAdd?: boolea
   const pinned = useMemo(() => [...drafts.added].sort((a, b) => b.date.localeCompare(a.date)), [drafts.added]);
   const list = useMemo(() => [...pinned.map((t) => ({ t, status: 'new' as RowStatus })), ...rows.map((t) => ({ t, status: (drafts.edits[t.id] ? 'edited' : 'saved') as RowStatus }))], [pinned, rows, drafts.edits]);
 
-  const filtered = month !== 'all' || category !== 'all' || activeSource !== 'all' || q.trim() !== '';
+  const filterCount = (month !== 'all' ? 1 : 0) + (category !== 'all' ? 1 : 0) + (activeSource !== 'all' ? 1 : 0) + (q.trim() !== '' ? 1 : 0);
+  const filtered = filterCount > 0;
   const totals = rows.reduce((a, t) => ({ in: a.in + (t.type === 'income' ? t.amount : 0), out: a.out + (t.type === 'expense' ? t.amount : 0) }), { in: 0, out: 0 });
+  const change = (set: (v: string) => void) => (v: string) => { set(v); setPage(1); };
+  const clearFilters = () => { setMonth('all'); setCategory('all'); setSource('all'); setQ(''); setPage(1); };
 
   const closeAdd = () => {
     setAdding(false);
@@ -82,59 +110,82 @@ export function Transactions({ openAdd = false, onCloseAdd }: { openAdd?: boolea
     toast(`Deleted ${n} transactions`);
   };
 
-  const shown = list.slice(0, limit);
+  const toggleEdit = (id: string) => setEditing((cur) => { const next = new Set(cur); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+
+  const pages = Math.max(1, Math.ceil(list.length / PAGE));
+  const here = Math.min(page, pages);
+  const shown = list.slice((here - 1) * PAGE, here * PAGE);
   const unsavedNote = drafts.added.length ? ` · ${drafts.added.length} not saved yet` : '';
+
+  const searchBox = (
+    <label className="topbar-search">
+      <Icon name="f-search" size={24} />
+      <input type="search" aria-label="Search transactions" placeholder="Search a transaction..." value={q} onChange={(e) => change(setQ)(e.target.value)} />
+    </label>
+  );
 
   return (
     <div className="page">
+      {wide && slot && createPortal(searchBox, slot)}
       <div className="page-head">
         <div>
           <h1>Transactions</h1>
           <div className="sub">Everything you earned and spent, from statements or added by hand</div>
         </div>
-        {/* One primary action per screen: while there are unsaved changes, Save changes is the primary one. */}
-        <button className={`btn ${drafts.dirty ? '' : 'primary'}`} aria-expanded={adding} onClick={() => setAdding(true)}>
-          <Icon name="plus" size={18} />Add transaction
-        </button>
+        <div className="head-actions">
+          <button className="btn hero icon-only" aria-label={filterCount ? `Filters, ${filterCount} on` : 'Filters'} aria-expanded={filtersOpen} onClick={() => setFiltersOpen((o) => !o)}>
+            <Icon name="f-filter" size={28} />
+            {filterCount > 0 && <span className="dot-count" aria-hidden>{filterCount}</span>}
+          </button>
+          <button className="btn hero outline-accent" onClick={() => setImporting(true)}><Icon name="f-import" size={24} />Import</button>
+          {/* One primary action per screen: while there are unsaved changes, Save changes is the primary one. */}
+          <button className={`btn hero ${drafts.dirty ? '' : 'primary'}`} aria-expanded={adding} onClick={() => setAdding(true)}>
+            <Icon name="plus" size={18} />Add transaction
+          </button>
+        </div>
       </div>
 
       {adding && <AddForm onDone={closeAdd} />}
-      <ImportCard />
+      <ImportCard open={importing} onClose={() => setImporting(false)} />
 
       <Card
         title="All transactions"
         sub={`${rows.length} shown${unsavedNote} · in ${money(totals.in)} · out ${money(totals.out)}`}
+        right={state.txns.length > 0 ? <button className="btn ghost danger-text" onClick={removeAll}><Icon name="f-trash" size={20} />Delete all</button> : undefined}
       >
-        <div className="form-grid filters" style={{ marginBottom: 12 }}>
-          <Field label="Month"><select value={month} onChange={(e) => { setMonth(e.target.value); setLimit(PAGE); }}><option value="all">All months</option>{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</select></Field>
-          {sources.length > 1 && <Field label="List"><select value={activeSource} onChange={(e) => { setSource(e.target.value); setLimit(PAGE); }}><option value="all">All lists</option>{sources.map((f) => <option key={f} value={f}>{f}</option>)}</select></Field>}
-          <Field label="Category"><select value={category} onChange={(e) => { setCategory(e.target.value); setLimit(PAGE); }}><option value="all">All categories</option>{DEFAULT_CATEGORIES.map((c) => <option key={c.name}>{c.name}</option>)}</select></Field>
-          <Field label="Search"><input value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} placeholder="swiggy, rent, ..." /></Field>
-        </div>
+        {filtersOpen && (
+          <div className="form-grid filters" style={{ marginBottom: 16 }}>
+            <Field label="Month"><select value={month} onChange={(e) => change(setMonth)(e.target.value)}><option value="all">All months</option>{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</select></Field>
+            {sources.length > 1 && <Field label="List"><select value={activeSource} onChange={(e) => change(setSource)(e.target.value)}><option value="all">All lists</option>{sources.map((f) => <option key={f} value={f}>{f}</option>)}</select></Field>}
+            <Field label="Category"><select value={category} onChange={(e) => change(setCategory)(e.target.value)}><option value="all">All categories</option>{DEFAULT_CATEGORIES.map((c) => <option key={c.name}>{c.name}</option>)}</select></Field>
+            {!wide && <Field label="Search"><input value={q} onChange={(e) => change(setQ)(e.target.value)} placeholder="swiggy, rent, ..." /></Field>}
+          </div>
+        )}
 
         {list.length === 0 ? (
           <div className="empty-cta">
             <p className="sub">{filtered ? 'No transactions match these filters.' : 'No transactions yet. Add one with the button above, or import a bank statement.'}</p>
-            {filtered && <button className="btn" onClick={() => { setMonth('all'); setCategory('all'); setSource('all'); setQ(''); }}>Clear filters</button>}
+            {filtered && <button className="btn" onClick={clearFilters}>Clear filters</button>}
           </div>
         ) : (
           <div className="table-wrap">
-            <table className="table cards txn editable">
-              <thead><tr><th>Date</th><th>Description</th><th>Category</th><th className="r">Amount</th><th><span className="sr-only">Actions</span></th></tr></thead>
+            <table className="table cards txn editable txn2">
+              <thead><tr><th>Description</th><th className="c">Date</th><th className="c">Category</th><th className="c">Type</th><th className="r">Amount</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
-                {shown.map(({ t, status }) => <TxnRow key={t.id} t={t} status={status} onDelete={() => remove(t, status)} />)}
+                {shown.map(({ t, status }) => <TxnRow key={t.id} t={t} status={status} editing={editing.has(t.id)} onEdit={() => toggleEdit(t.id)} onDelete={() => remove(t, status)} />)}
               </tbody>
             </table>
-            {list.length > limit && <div className="row" style={{ justifyContent: 'center', marginTop: 10 }}><button className="btn" onClick={() => setLimit(limit + PAGE)}>Show {Math.min(PAGE, list.length - limit)} more</button></div>}
-          </div>
-        )}
-        {state.txns.length > 0 && (
-          <div className="card-foot">
-            <span className="sub">Starting over? This removes every transaction, not just the ones shown.</span>
-            <button className="btn small danger" onClick={removeAll}><Icon name="trash" size={16} />Delete all</button>
           </div>
         )}
       </Card>
+
+      {pages > 1 && (
+        <nav className="pager" aria-label="Pages">
+          <button className="btn icon ghost" aria-label="Previous page" disabled={here <= 1} onClick={() => setPage(here - 1)}><Icon name="f-prev" size={32} /></button>
+          <span className="pager-now" aria-current="page">{here}<span className="sr-only"> of {pages}</span></span>
+          <button className="btn icon ghost" aria-label="Next page" disabled={here >= pages} onClick={() => setPage(here + 1)}><Icon name="f-next" size={32} /></button>
+        </nav>
+      )}
 
       {drafts.dirty && <SaveBar />}
     </div>
@@ -161,38 +212,51 @@ function SaveBar() {
   );
 }
 
-function TxnRow({ t, status, onDelete }: { t: Txn; status: RowStatus; onDelete: () => void }) {
+function TxnRow({ t, status, editing, onEdit, onDelete }: { t: Txn; status: RowStatus; editing: boolean; onEdit: () => void; onDelete: () => void }) {
   const drafts = useDrafts();
   const bad = rowProblem(t);
   const dateBad = bad === 'a valid date';
   const amountBad = bad === 'an amount above 0';
   const label = t.description || 'this transaction';
+  // A row that cannot be saved as it is (an import with no date, say) opens by itself so the person sees what to fix.
+  const open = editing || !!bad;
   const flip = () => {
     const type = t.type === 'income' ? 'expense' : 'income';
     drafts.edit(t.id, { type, category: categorize(t.description, type) });
   };
+  const income = t.type === 'income';
   return (
     <tr className={status === 'saved' ? undefined : 'unsaved'}>
-      <td data-label="Date">
+      <td className="title" data-label="Description">
         {status !== 'saved' && <span className="sr-only">{status === 'new' ? 'Unsaved new transaction. ' : 'Unsaved change. '}</span>}
-        <input className="cell-input num" type="date" aria-label={`Date for ${label}`} aria-invalid={dateBad || undefined} value={t.date} onClick={openCalendar} onChange={(e) => drafts.edit(t.id, { date: e.target.value })} />
+        {open
+          ? <input className="cell-input" aria-label={`Description for ${label}`} value={t.description} placeholder="Description" onChange={(e) => drafts.edit(t.id, { description: e.target.value })} />
+          : <span className="d-title">{t.description || 'No description'}</span>}
       </td>
-      <td className="title">
-        <input className="cell-input" aria-label={`Description for ${label}`} value={t.description} placeholder="Description" onChange={(e) => drafts.edit(t.id, { description: e.target.value })} />
+      <td className="c" data-label="Date">
+        {open
+          ? <input className="cell-input num" type="date" aria-label={`Date for ${label}`} aria-invalid={dateBad || undefined} value={t.date} onClick={openCalendar} onChange={(e) => drafts.edit(t.id, { date: e.target.value })} />
+          : <span className="num">{t.date}</span>}
       </td>
-      <td data-label="Category">
-        <select className="inline-input cell-input" aria-label={`Category for ${label}`} value={t.category} onChange={(e) => drafts.edit(t.id, { category: e.target.value })}>
-          {(t.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => <option key={c}>{c}</option>)}
-        </select>
+      <td className="c" data-label="Category">
+        {open
+          ? <select className="inline-input cell-input" aria-label={`Category for ${label}`} value={t.category} onChange={(e) => drafts.edit(t.id, { category: e.target.value })}>
+              {(income ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => <option key={c}>{c}</option>)}
+            </select>
+          : <span className="pill">{t.category}</span>}
       </td>
+      <td className="c" data-label="Type"><span className={income ? 'credit' : 'debit'}>{income ? 'Credit' : 'Debit'}</span></td>
       <td data-label="Amount" className="r">
-        <div className={`amt ${t.type === 'income' ? 'good' : ''}`}>
-          <button type="button" className="sign" aria-label={t.type === 'income' ? `Money in for ${label}. Change to money out` : `Money out for ${label}. Change to money in`} title={t.type === 'income' ? 'Money in. Click to change to money out.' : 'Money out. Click to change to money in.'} onClick={flip}>{t.type === 'income' ? '+' : '\u2212'}</button>
-          <input className="cell-input num" type="number" inputMode="decimal" min={0} step="0.01" aria-label={`Amount for ${label}`} aria-invalid={amountBad || undefined} value={t.amount ? t.amount : ''} placeholder="0.00" onChange={(e) => drafts.edit(t.id, { amount: e.target.value === '' ? 0 : Number(e.target.value) })} />
-        </div>
+        {open ? (
+          <div className={`amt ${income ? 'good' : ''}`}>
+            <button type="button" className="sign" aria-label={income ? `Money in for ${label}. Change to money out` : `Money out for ${label}. Change to money in`} title={income ? 'Money in. Click to change to money out.' : 'Money out. Click to change to money in.'} onClick={flip}>{income ? '+' : '−'}</button>
+            <input className="cell-input num" type="number" inputMode="decimal" min={0} step="0.01" aria-label={`Amount for ${label}`} aria-invalid={amountBad || undefined} value={t.amount ? t.amount : ''} placeholder="0.00" onChange={(e) => drafts.edit(t.id, { amount: e.target.value === '' ? 0 : Number(e.target.value) })} />
+          </div>
+        ) : <span className="num">{income ? '+' : '−'}{amountText(t.amount)}</span>}
       </td>
       <td className="actions">
-        <button className="btn icon small ghost" aria-label={`Delete ${label}`} title="Delete" onClick={onDelete}><Icon name="trash" size={18} /><span className="icon-label">Delete</span></button>
+        <button className="btn icon small ghost icon-edit" aria-label={editing ? `Done editing ${label}` : `Edit ${label}`} aria-pressed={editing} title={editing ? 'Done' : 'Edit'} disabled={!!bad} onClick={onEdit}><Icon name="f-edit" size={24} /><span className="icon-label">{editing ? 'Done' : 'Edit'}</span></button>
+        <button className="btn icon small ghost icon-del" aria-label={`Delete ${label}`} title="Delete" onClick={onDelete}><Icon name="f-trash" size={24} /><span className="icon-label">Delete</span></button>
       </td>
     </tr>
   );
@@ -239,7 +303,8 @@ function AddForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-function ImportCard() {
+/** What is already connected or imported (sheets, files) and any note from the last import. It is not shown when there is nothing to say. */
+function ImportCard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { state, dispatch } = useStore();
   const drafts = useDrafts();
   const { toast } = useToast();
@@ -300,54 +365,85 @@ function ImportCard() {
     toast(`Removed ${gone.length} transactions from ${name}.`, { undo: () => dispatch({ type: 'addTxns', txns: gone }) });
   };
 
+  const hasSources = (state.sheets ?? []).length > 0 || files.length > 0 || !!warning || notes.length > 0;
+
   return (
-    <Card
-      title="Import a bank statement"
-      sub={(
-        <>
-          <div>Works with CSV and Excel statements from any bank, or a Google Sheet that keeps itself up to date. I work out the columns myself.</div>
-          <details>
-            <summary>Why not connect my bank account directly?</summary>
-            <div className="stack sub" style={{ marginTop: 8 }}>
-              <p>Connecting to a bank means going through a regulated provider: open-banking aggregators in the UK and Europe, data aggregators in the US, the Account Aggregator framework in India, and similar schemes elsewhere. They need agreements, security audits and a server, and a personal app cannot do that on its own.</p>
-              <p>So this app does not pretend to. Download a statement from your bank each month (CSV or Excel), or keep your transactions in a Google Sheet, and bring them in here. Re-importing the same file will not create duplicates.</p>
-              <p>Live sync could be added later by putting an aggregator behind a small backend and feeding its output into the same import used here.</p>
+    <>
+      <input
+        ref={picker}
+        hidden
+        type="file"
+        aria-label="Choose a statement file"
+        accept=".csv,.tsv,.txt,.xlsx,.xls,.htm,.html,.pdf,text/csv,text/plain"
+        onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void importFile(f); }}
+      />
+      {open && <ImportDialog onClose={onClose} onPickFile={() => picker.current?.click()} onSheet={(link) => sheets.openConnect(link)} />}
+      {hasSources && (
+        <Card title="Imported sources" sub="Files and Google Sheets that your transactions came from">
+          {warning && <Callout tone="watch">{warning}</Callout>}
+          <SheetList />
+          {notes.length > 0 && <Callout tone="info"><span>{notes.join(' ')}</span></Callout>}
+          {files.length > 0 && (
+            <ul className="clean files" aria-label="Imported files">
+              {files.map(([name, f]) => (
+                <li key={name}>
+                  <Icon name="file" size={18} />
+                  <div className="file-info">
+                    <b>{name}</b>
+                    <span className="sub">{f.count} transactions &middot; {f.from} to {f.to}{f.unsaved > 0 && <> &middot; <b className="unsaved-tag">{f.unsaved === f.count ? 'not saved yet' : `${f.unsaved} not saved yet`}</b></>}</span>
+                  </div>
+                  <button className="btn small danger" aria-label={`Remove ${name}`} onClick={() => remove(name)}><Icon name="trash" size={16} />Remove</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+    </>
+  );
+}
+
+/** One dialog for both ways in: a statement file, or a link to a Google Sheet. */
+function ImportDialog({ onClose, onPickFile, onSheet }: { onClose: () => void; onPickFile: () => void; onSheet: (link: string) => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [link, setLink] = useState('');
+  useEffect(() => { const d = ref.current; if (d && !d.open) { d.showModal(); dialogIn(d); } }, []);
+  const pick = () => { onClose(); onPickFile(); };
+  const sheet = () => { onClose(); onSheet(link.trim()); };
+  return (
+    <dialog ref={ref} className="modal import-dialog" aria-labelledby="import-title" onCancel={(e) => { e.preventDefault(); onClose(); }} onClick={(e) => { if (e.target === ref.current) onClose(); }}>
+      <div className="import-body">
+        <div className="import-head">
+          <h2 id="import-title">Import transaction</h2>
+          <button className="btn icon small ghost" aria-label="Close" onClick={onClose}><Icon name="f-close" size={20} /></button>
+        </div>
+        <button className="import-file" onClick={pick}>
+          <Icon name="f-upload" size={60} />
+          <span className="import-file-text">
+            <b>Import a .csv file</b>
+            <span className="sub">Works with CSV and Excel statements from any bank</span>
+          </span>
+        </button>
+        <p className="import-or" aria-hidden>OR</p>
+        <form className="import-sheet" onSubmit={(e) => { e.preventDefault(); sheet(); }}>
+          <img src={sheetsArt} alt="" width={80} height={80} />
+          <div className="import-sheet-fields">
+            <label htmlFor="import-sheet-link">Google Sheet link</label>
+            <div className="import-sheet-row">
+              <input id="import-sheet-link" type="text" inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="off" placeholder="https://docs.google.com/spreadsheets/d/" value={link} onChange={(e) => setLink(e.target.value)} />
+              <button className="btn" type="submit">Continue</button>
             </div>
-          </details>
-        </>
-      )}
-      right={(
-        <>
-          <input
-            ref={picker}
-            hidden
-            type="file"
-            aria-label="Choose a statement file"
-            accept=".csv,.tsv,.txt,.xlsx,.xls,.htm,.html,.pdf,text/csv,text/plain"
-            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void importFile(f); }}
-          />
-          <button className="btn small" onClick={() => picker.current?.click()}><Icon name="upload" size={16} />Import</button>
-          <button className="btn small" onClick={sheets.openConnect}><Icon name="table" size={16} />Google Sheet</button>
-        </>
-      )}
-    >
-      {warning && <Callout tone="watch">{warning}</Callout>}
-      <SheetList />
-      {notes.length > 0 && <Callout tone="info"><span>{notes.join(' ')}</span></Callout>}
-      {files.length > 0 && (
-        <ul className="clean files" aria-label="Imported files">
-          {files.map(([name, f]) => (
-            <li key={name}>
-              <Icon name="file" size={18} />
-              <div className="file-info">
-                <b>{name}</b>
-                <span className="sub">{f.count} transactions &middot; {f.from} to {f.to}{f.unsaved > 0 && <> &middot; <b className="unsaved-tag">{f.unsaved === f.count ? 'not saved yet' : `${f.unsaved} not saved yet`}</b></>}</span>
-              </div>
-              <button className="btn small danger" aria-label={`Remove ${name}`} onClick={() => remove(name)}><Icon name="trash" size={16} />Remove</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
+          </div>
+        </form>
+        <details className="import-why">
+          <summary>Why not connect my bank account directly?</summary>
+          <div className="stack sub" style={{ marginTop: 8 }}>
+            <p>Connecting to a bank means going through a regulated provider: open-banking aggregators in the UK and Europe, data aggregators in the US, the Account Aggregator framework in India, and similar schemes elsewhere. They need agreements, security audits and a server, and a personal app cannot do that on its own.</p>
+            <p>So this app does not pretend to. Download a statement from your bank each month (CSV or Excel), or keep your transactions in a Google Sheet, and bring them in here. Re-importing the same file will not create duplicates.</p>
+            <p>Live sync could be added later by putting an aggregator behind a small backend and feeding its output into the same import used here.</p>
+          </div>
+        </details>
+      </div>
+    </dialog>
   );
 }

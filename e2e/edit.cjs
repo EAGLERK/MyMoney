@@ -31,6 +31,7 @@ async function start(browser, opts = {}) {
 async function importCsv(p, name = 'oct.csv', text = CSV) {
   const chooser = p.waitForEvent('filechooser', { timeout: 8000 });
   await p.getByRole('button', { name: 'Import', exact: true }).click();
+  await p.getByRole('button', { name: /Import a \.csv file/ }).click();
   await (await chooser).setFiles({ name, mimeType: 'text/csv', buffer: Buffer.from(text) });
 }
 const saved = (p) => p.evaluate(() => { const s = JSON.parse(localStorage.getItem('mymoney:v1') || '{"txns":[]}'); return s.txns.map((t) => ({ d: t.date, desc: t.description, a: t.amount, type: t.type, cat: t.category })); });
@@ -76,6 +77,9 @@ const nav = (p, name) => p.getByRole('navigation').getByRole('button', { name, e
     await nav(p, 'Transactions');
 
     // ---------- editing a saved row: drafts too ----------
+    // Rows are plain text until the pencil is pressed.
+    check((await p.getByLabel('Date for UPI-SWIGGY ORDER').count()) === 0, 'rows show as plain text, not as boxes');
+    await p.getByRole('button', { name: 'Edit UPI-SWIGGY ORDER' }).click();
     const date = p.getByLabel('Date for UPI-SWIGGY ORDER');
     await date.click();
     check((await p.evaluate(() => window.__picker)) >= 1, 'clicking the date box opens the calendar');
@@ -102,6 +106,7 @@ const nav = (p, name) => p.getByRole('navigation').getByRole('button', { name, e
     check((await saved(p)).find((t) => t.desc === 'Swiggy dinner')?.type === 'income', 'saving applies it');
 
     // putting a value back removes the change
+    await p.getByRole('button', { name: /^Edit UPI-BigBasket/ }).click();
     const amt = p.getByLabel('Amount for UPI-BigBasket');
     await amt.fill('999');
     check(await p.getByText('1 unsaved change', { exact: true }).isVisible(), 'an edit shows as a change');
@@ -122,7 +127,7 @@ const nav = (p, name) => p.getByRole('navigation').getByRole('button', { name, e
     await p.getByLabel('Description', { exact: true }).fill('Chai stall');
     await p.getByLabel(/^Amount \(/).fill('40');
     await p.getByRole('button', { name: 'Add to list' }).click();
-    check(await shown(p.getByLabel('Description for Chai stall')) && (await p.locator('tr.unsaved').count()) === 1 && (await saved(p)).every((t) => t.desc !== 'Chai stall'), 'a typed-in transaction lands in the list as an unsaved row');
+    check(await shown(p.getByText('Chai stall', { exact: true })) && (await p.locator('tr.unsaved').count()) === 1 && (await saved(p)).every((t) => t.desc !== 'Chai stall'), 'a typed-in transaction lands in the list as an unsaved row');
     await p.getByRole('button', { name: 'Save changes' }).click();
     await p.getByText('Saved 1 new transaction.').waitFor({ timeout: 5000 });
     check((await saved(p)).some((t) => t.desc === 'Chai stall' && t.a === 40), 'and is stored on Save');

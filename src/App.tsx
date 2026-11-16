@@ -3,6 +3,8 @@ import { ConfirmProvider, ToastProvider } from './components/feedback';
 import { Icon, type IconName } from './components/icons';
 import { DraftsProvider, useDrafts } from './components/Drafts';
 import { Logo } from './components/Logo';
+import lockup from './assets/figma/logo.svg';
+import avatarRing from './assets/figma/avatar-ring.svg';
 import { Notifications } from './components/Notifications';
 import { SheetsProvider } from './components/Sheets';
 import { Tour } from './components/Tour';
@@ -32,13 +34,13 @@ const THEMES: Array<{ id: Theme; label: string; icon: IconName }> = [
 ];
 /** The sections, in order. Investing is only there for people it fits, so this is read on every render, not once. */
 const allTabs = (): Tab[] => [
-  { id: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'dashboard' },
-  { id: 'transactions', label: 'Transactions', short: 'Activity', icon: 'transactions' },
-  { id: 'goals', label: 'Goals', short: 'Goals', icon: 'goals' },
+  { id: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'f-dashboard' },
+  { id: 'transactions', label: 'Transactions', short: 'Activity', icon: 'f-transactions' },
+  { id: 'goals', label: 'Goals', short: 'Goals', icon: 'f-goals' },
   // Investing is switched off for now (see src/features.ts).
   ...(features.investing ? [{ id: 'investments', label: 'Investments', short: 'Invest', icon: 'investments' } as Tab, { id: 'plan', label: 'Plan', short: 'Plan', icon: 'plan' } as Tab] : []),
-  { id: 'notes', label: 'Notes', short: 'Notes', icon: 'notes' },
-  { id: 'settings', label: 'Settings', short: 'Settings', icon: 'settings' },
+  { id: 'notes', label: 'Notes', short: 'Notes', icon: 'f-notes' },
+  { id: 'settings', label: 'Settings', short: 'Settings', icon: 'f-settings' },
 ];
 
 const ShowcasePage = lazy(() => import('./three/ShowcasePage'));
@@ -52,6 +54,11 @@ function suggestedName(user: { user_metadata?: Record<string, unknown> } | null 
   const full = (typeof m.full_name === 'string' && m.full_name) || (typeof m.name === 'string' && m.name) || '';
   return full.trim();
 }
+
+const initialsOf = (name: string): string => {
+  const w = name.trim().split(/\s+/).filter(Boolean);
+  return ((w[0]?.[0] ?? '') + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase() || 'M';
+};
 
 /** Unsaved transactions live here, above the screens, so leaving Transactions can ask what to do with them. */
 function Shell() {
@@ -132,7 +139,11 @@ function ShellInner() {
       <button className="skip" onClick={() => mainRef.current?.focus()}>Skip to main content</button>
       <div className="shell">
         <aside className="sidebar">
-          <div className="brand"><Logo />MyMoney</div>
+          <div className="brand">
+            {/* The dark design has its own logo lockup; the light theme keeps the mark and the name. */}
+            <img className="brand-lockup" src={lockup} alt="MyMoney" />
+            <span className="brand-light"><Logo />MyMoney</span>
+          </div>
           <nav aria-label="Sections" className="side-group">
             {ALL.map((t) => (
               <button key={t.id} className="side-link" data-tour={`nav-${t.id}`} aria-current={tab === t.id ? 'page' : undefined} onClick={() => go(t.id)}>
@@ -141,22 +152,24 @@ function ShellInner() {
             ))}
           </nav>
           <div className="side-foot">
-            {auth?.user ? (
-              <>
-                <b style={{ overflowWrap: 'anywhere' }}>{auth.user.email || auth.user.phone}</b>
+            <div className="user">
+              <span className="avatar" aria-hidden style={{ backgroundImage: `url("${avatarRing}")` }}>{initialsOf(state.profile.name)}</span>
+              <div className="user-info">
+                <b>{state.profile.name || 'You'}</b>
+                {auth?.user
+                  ? <span className="sub" style={{ overflowWrap: 'anywhere' }}>{auth.user.email || auth.user.phone}</span>
+                  : <button className="link-quiet" onClick={() => go('settings')}>Stored on this device. Back up</button>}
+              </div>
+            </div>
+            {auth?.user && (
+              <div className="row">
                 {sync && (
                   <span className={`sync-chip ${sync.status === 'saved' ? '' : sync.status === 'saving' ? 'saving' : 'bad'}`} role="status">
                     <i />{sync.status === 'saved' ? 'All changes saved' : sync.status === 'saving' ? 'Saving...' : sync.status === 'conflict' ? 'Needs your attention' : 'Not saved'}
                   </span>
                 )}
                 <button className="btn small" onClick={() => drafts.guard(() => void (sync ? sync.signOutSafely() : auth.signOut()))}>Sign out</button>
-              </>
-            ) : (
-              <>
-                <b>Your data stays here</b>
-                <span className="sub">Stored in this browser only. Back it up now and then.</span>
-                <button className="btn small" onClick={() => go('settings')}>Back up</button>
-              </>
+              </div>
             )}
           </div>
         </aside>
@@ -164,6 +177,8 @@ function ShellInner() {
         <div className="panel">
           <div className="crumbs">
             <div className="path">MyMoney<span className="crumb-rest"> &rsaquo; <b>{current.label}</b></span></div>
+            {/* A screen can put its own search box here (Transactions does). */}
+            <div id="topbar-slot" className="topbar-slot" />
             {/* Only for data loaded by an earlier version that had sample data: a way to see what it is and remove it. */}
             {state.txns.some((t) => t.source === 'demo') && <button className="badge watch badge-btn" title="This is sample data. Open Settings to remove it." onClick={() => go('settings')}>Sample<span className="crumb-rest"> data</span></button>}
             {state.onboarded && features.voice && <Voice go={go} theme={theme} setTheme={setTheme} tabs={ALL.map((t) => t.id as VoiceTab)} />}

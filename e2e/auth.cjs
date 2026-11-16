@@ -196,7 +196,7 @@ const nav = (page, name) => page.getByRole('navigation').getByRole('button', { n
     check(!JSON.stringify(st.rows[0].data).includes('From device A') && JSON.stringify(st.rows[0].data).includes('From device B'), 'the server still holds B\'s data after the conflict');
     await p.getByRole('button', { name: 'Load the latest' }).click();
     check(await savedChip(p), 'device A: "Load the latest" resolves the conflict');
-    check(await p.getByLabel('Description for From device B').waitFor({ timeout: 6000 }).then(() => true, () => false), 'device A now shows device B\'s change');
+    check(await p.getByText('From device B', { exact: true }).waitFor({ timeout: 6000 }).then(() => true, () => false), 'device A now shows device B\'s change');
 
     // Keep-mine path
     await p.getByRole('button', { name: 'Add transaction' }).click();

@@ -16,6 +16,6 @@ const serviceWorker = (): Plugin => ({
 export default defineConfig({
   plugins: [react(), serviceWorker()],
   define: { __PWA__: JSON.stringify(!process.env.SINGLE) },
-  build: process.env.SINGLE ? { rolldownOptions: { output: { codeSplitting: false } } } : {},
+  build: process.env.SINGLE ? { assetsInlineLimit: 100_000_000, rolldownOptions: { output: { codeSplitting: false } } } : {},
   test: { include: ['tests/**/*.test.ts'], define: { __PWA__: 'false' } },
 });

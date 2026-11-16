@@ -38,12 +38,38 @@ const PATHS: Record<string, string> = {
   bike: 'M5.5 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18.5 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 15h5l2.5-6H12M13 15l-2.5-4H8M15.5 9l1-3h2.5',
 };
 
-export type IconName = keyof typeof PATHS;
+/** Icons drawn in the Figma design. They are painted through a mask, so they take the text colour of whatever they sit in (grey, white, accent) and follow the theme. */
+import dashboardUrl from '../assets/figma/nav-dashboard.svg';
+import transactionsUrl from '../assets/figma/nav-transactions.svg';
+import goalsUrl from '../assets/figma/nav-goals.svg';
+import notesUrl from '../assets/figma/nav-notes.svg';
+import settingsUrl from '../assets/figma/nav-settings.svg';
+import searchUrl from '../assets/figma/search.svg';
+import filterUrl from '../assets/figma/filter.svg';
+import importUrl from '../assets/figma/import.svg';
+import editUrl from '../assets/figma/edit.svg';
+import trashUrl from '../assets/figma/trash.svg';
+import closeUrl from '../assets/figma/close.svg';
+import nextUrl from '../assets/figma/next.svg';
+import uploadUrl from '../assets/figma/upload.svg';
+
+const MASKS = {
+  'f-dashboard': dashboardUrl, 'f-transactions': transactionsUrl, 'f-goals': goalsUrl, 'f-notes': notesUrl, 'f-settings': settingsUrl,
+  'f-search': searchUrl, 'f-filter': filterUrl, 'f-import': importUrl, 'f-edit': editUrl, 'f-trash': trashUrl, 'f-close': closeUrl,
+  'f-next': nextUrl, 'f-prev': nextUrl, // the design mirrors one arrow for "previous"
+  'f-upload': uploadUrl,
+} as const;
+
+export type IconName = keyof typeof PATHS | keyof typeof MASKS;
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  if (name in MASKS) {
+    const url = `url("${MASKS[name as keyof typeof MASKS]}")`;
+    return <span className={name === 'f-prev' ? 'icon-mask flip' : 'icon-mask'} aria-hidden style={{ width: size, height: size, WebkitMaskImage: url, maskImage: url }} />;
+  }
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d={PATHS[name]} />
+      <path d={PATHS[name as keyof typeof PATHS]} />
     </svg>
   );
 }

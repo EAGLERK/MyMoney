@@ -56,10 +56,12 @@ const mitra = async (p, text) => {
     await p.keyboard.press('Escape');
 
     await nav(p, 'Transactions');
+    await p.getByRole('button', { name: 'Import', exact: true }).click();
     check(await shown(p.getByText(/Why not connect my bank account directly\?/)), 'the bank-connection note is there');
     await p.getByText('Why not connect my bank account directly?').click();
     const note = await body(p);
     check(!/\bRBI\b/.test(note.replace(/Account Aggregator framework in India/, '')) && /UK and Europe/.test(note), 'it talks about more than one country, not just India');
+    await p.keyboard.press('Escape');
 
     await nav(p, 'Settings');
     await shown(p.getByRole('heading', { name: 'Country and currency' }));

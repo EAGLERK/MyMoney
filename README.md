@@ -142,11 +142,11 @@ What has and has not been checked:
 
 ## Editing and saving transactions
 
-Every transaction can be edited in the list: date (click it for a calendar), description, category, amount, and money in or out. Anything imported, typed in or changed is a **draft** until you press **Save changes**: it is highlighted, it does not count on the Dashboard, and leaving the screen asks whether to save, leave without saving, or keep editing. Closing or reloading the tab shows the browser's own warning. Tests: `npm run e2e:edit`.
+Rows show as plain text (description, date, category pill, Debit or Credit, amount). Press the pencil on a row to edit it: date (click it for a calendar), description, category, amount, and money in or out. A row that cannot be saved as it is (an import with no date, say) opens by itself. The list is paged (20 a page), the filters sit behind the filter button, and search is in the top bar. Anything imported, typed in or changed is a **draft** until you press **Save changes**: it is highlighted, it does not count on the Dashboard, and leaving the screen asks whether to save, leave without saving, or keep editing. Closing or reloading the tab shows the browser's own warning. Tests: `npm run e2e:edit`.
 
 ## Google Sheets
 
-On Transactions, **Google Sheet** next to Import connects a sheet whose transactions MyMoney keeps up to date.
+On Transactions, **Import** opens one dialog with two ways in: a CSV or Excel file, or a **Google Sheet link** (paste it and press Continue). A connected sheet keeps its transactions up to date.
 
 1. In Google Sheets press **Share** and set General access to **Anyone with the link** (Viewer). (A sheet published with File, Share, Publish to the web works too.)
 2. Paste the link. MyMoney reads the sheet, shows what it found (count, dates, money in and out, three sample rows) and adds nothing until you press Add.

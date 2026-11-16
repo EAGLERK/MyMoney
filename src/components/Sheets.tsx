@@ -30,7 +30,8 @@ interface SheetsApi {
   checking: ReadonlySet<string>;
   /** When each sheet was last looked at (ms), this session. */
   checkedAt: Readonly<Record<string, number>>;
-  openConnect(): void;
+  /** Opens the connect dialog, optionally with a link already pasted in. */
+  openConnect(link?: string): void;
   /** Opens the dialog to add more tabs to a spreadsheet that is already connected. */
   openAddTabs(group: string): void;
   syncNow(id: string): void;
@@ -52,7 +53,7 @@ export function SheetsProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [checking, setChecking] = useState<ReadonlySet<string>>(new Set());
   const [checkedAt, setCheckedAt] = useState<Record<string, number>>({});
-  const [connecting, setConnecting] = useState<null | { group?: string }>(null);
+  const [connecting, setConnecting] = useState<null | { group?: string; link?: string }>(null);
   const chain = useRef<Promise<void>>(Promise.resolve());
   const inflight = useRef(new Set<string>());
   const last = useRef<Record<string, number>>({});
@@ -130,7 +131,7 @@ export function SheetsProvider({ children }: { children: ReactNode }) {
   const api = useMemo<SheetsApi>(() => ({
     checking,
     checkedAt,
-    openConnect: () => setConnecting({}),
+    openConnect: (link) => setConnecting({ link: typeof link === 'string' ? link : undefined }),
     openAddTabs: (group) => setConnecting({ group }),
     syncNow: (id) => queued(id, true),
     setAuto: (id, auto) => { dispatch({ type: 'updateSheet', id, patch: { auto } }); live.current.toast(auto ? 'Automatic updates are on.' : 'Automatic updates are off. The transactions stay; press Sync now to update them.'); },
@@ -187,7 +188,7 @@ export function SheetsProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={api}>
       {children}
-      {connecting && <ConnectDialog addTo={connecting.group} onClose={() => setConnecting(null)} onConnect={connect} />}
+      {connecting && <ConnectDialog addTo={connecting.group} initialLink={connecting.link} onClose={() => setConnecting(null)} onConnect={connect} />}
     </Ctx.Provider>
   );
 }
@@ -196,11 +197,11 @@ export function SheetsProvider({ children }: { children: ReactNode }) {
 
 const MAX_TABS = 24;
 
-function ConnectDialog({ addTo, onClose, onConnect }: { addTo?: string; onClose: () => void; onConnect: (a: Adding) => void }) {
+function ConnectDialog({ addTo, initialLink, onClose, onConnect }: { addTo?: string; initialLink?: string; onClose: () => void; onConnect: (a: Adding) => void }) {
   const { state } = useStore();
   const existing = addTo ? (state.sheets ?? []).filter((s) => s.group === addTo) : [];
   const ref = useRef<HTMLDialogElement>(null);
-  const [link, setLink] = useState('');
+  const [link, setLink] = useState(initialLink ?? '');
   const [mode, setMode] = useState<'one' | 'several'>(addTo ? 'several' : 'one');
   const [tabText, setTabText] = useState('');
   const [title, setTitle] = useState(existing[0]?.title ?? '');

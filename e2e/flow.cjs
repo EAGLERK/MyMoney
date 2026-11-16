@@ -59,13 +59,14 @@ const check = (ok, msg) => {
   const upload = async (name, text) => {
     const chooser = page.waitForEvent('filechooser', { timeout: 8000 });
     await page.getByRole('button', { name: 'Import', exact: true }).click();
+    await page.getByRole('button', { name: /Import a \.csv file/ }).click();
     await (await chooser).setFiles({ name, mimeType: 'text/csv', buffer: Buffer.from(text) });
   };
   const saveBtn = page.getByRole('button', { name: 'Save changes' });
   const sawText = (txt, t = 6000) => page.getByText(txt).first().waitFor({ timeout: t }).then(() => true, () => false);
   await upload('statement.csv', csv);
   check(await sawText('Read 8 transactions from statement.csv'), 'CSV: clicking Import opens the file chooser and reads the file straight away');
-  check((await page.locator('textarea').count()) === 0 && (await page.getByRole('button', { name: 'Import', exact: true }).getAttribute('aria-expanded')) === null, 'CSV: no import box opens');
+  check((await page.locator('textarea').count()) === 0 && (await page.getByRole('dialog').count()) === 0, 'CSV: the import dialog closes and no import box stays open');
   const fileRow = page.getByRole('list', { name: 'Imported files' }).getByRole('listitem').filter({ hasText: 'statement.csv' });
   check(await fileRow.isVisible() && (await fileRow.innerText()).includes('8 transactions') && (await fileRow.innerText()).includes('not saved yet'), 'CSV: the file is listed with its row count and marked not saved yet');
   check(await page.getByText('8 unsaved changes', { exact: true }).isVisible() && await saveBtn.isEnabled() && (await page.locator('tr.unsaved').count()) === 8, 'CSV: a Save bar appears and the 8 new rows are highlighted');
@@ -88,6 +89,7 @@ const check = (ok, msg) => {
   const uploadPath = async (path) => {
     const chooser = page.waitForEvent('filechooser', { timeout: 8000 });
     await page.getByRole('button', { name: 'Import', exact: true }).click();
+    await page.getByRole('button', { name: /Import a \.csv file/ }).click();
     await (await chooser).setFiles(path);
   };
   await uploadPath(require('path').join(__dirname, '..', 'tests', 'fixtures', 'statement-openpyxl.xlsx'));
@@ -167,7 +169,7 @@ const check = (ok, msg) => {
   });
   await legacyPage.goto(URL);
   await legacyPage.getByRole('navigation').getByRole('button', { name: 'Transactions' }).click();
-  check(await legacyPage.getByLabel('Description for Legacy coffee').waitFor({ timeout: 6000 }).then(() => true, () => false), 'data saved under the old key (eaglerk) still loads');
+  check(await legacyPage.getByText('Legacy coffee', { exact: true }).waitFor({ timeout: 6000 }).then(() => true, () => false), 'data saved under the old key (eaglerk) still loads');
   if (investing) {
     await legacyPage.getByRole('navigation').getByRole('button', { name: 'Investments' }).click();
     check((await legacyPage.locator('main').innerText()).includes('Old savings'), 'old-key investments still load too');

@@ -36,6 +36,7 @@ const prevMonthCsv = () => {
 async function importCsv(page, name, text) {
   const chooser = page.waitForEvent('filechooser', { timeout: 8000 });
   await page.getByRole('button', { name: 'Import', exact: true }).click();
+  await page.getByRole('button', { name: /Import a \.csv file/ }).click();
   await (await chooser).setFiles({ name, mimeType: 'text/csv', buffer: Buffer.from(text) });
 }
 

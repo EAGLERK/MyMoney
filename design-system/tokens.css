@@ -18,6 +18,8 @@
   --accent: #0d7a4e;
   --accent-ink: #ffffff;
   --accent-text: #0d7a4e;
+  --accent-fill: #0d7a4e;
+  --accent-fill-ink: #ffffff;
   --good-text: #006300;
   --good-bg: #e6f3e6;
   --bad-text: #b02a2a;
@@ -95,6 +97,8 @@
     --accent: #34d399;
     --accent-ink: #04130c;
     --accent-text: #4fd1a1;
+    --accent-fill: #0d7a4e;
+    --accent-fill-ink: #ffffff;
     --good-text: #4cc24c;
     --good-bg: #17301a;
     --bad-text: #ff8a8a;
@@ -128,6 +132,8 @@
   --accent: #34d399;
   --accent-ink: #04130c;
   --accent-text: #4fd1a1;
+  --accent-fill: #0d7a4e;
+  --accent-fill-ink: #ffffff;
   --good-text: #4cc24c;
   --good-bg: #17301a;
   --bad-text: #ff8a8a;
@@ -160,6 +166,8 @@
   --accent: #0d7a4e;
   --accent-ink: #ffffff;
   --accent-text: #0d7a4e;
+  --accent-fill: #0d7a4e;
+  --accent-fill-ink: #ffffff;
   --good-text: #006300;
   --good-bg: #e6f3e6;
   --bad-text: #b02a2a;
@@ -194,6 +202,8 @@
   --accent: #34d399;
   --accent-ink: #04130c;
   --accent-text: #4fd1a1;
+  --accent-fill: #0d7a4e;
+  --accent-fill-ink: #ffffff;
   --good-text: #4cc24c;
   --good-bg: #17301a;
   --bad-text: #ff8a8a;

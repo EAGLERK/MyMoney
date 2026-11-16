@@ -61,7 +61,8 @@ const minutes = (p, n) => p.clock.fastForward(n * 60_000);
 
     // ---------- the button and the dialog ----------
     check((await p.locator('main .btn.primary').count()) === 1, 'still one green button on Transactions');
-    await p.getByRole('button', { name: 'Google Sheet', exact: true }).click();
+    await p.getByRole('button', { name: 'Import', exact: true }).click();
+    await p.getByRole('button', { name: 'Continue' }).click();
     check(await shown(dialog(p)) && await shown(p.getByText('Anyone with the link')), 'the Google Sheet button opens a dialog that says how to share the sheet');
     check(await shown(p.getByText(/Anyone who has this link can read the sheet/)), 'and says plainly that a link-shared sheet is readable by anyone with the link');
     const checkBtn = dialog(p).getByRole('button', { name: 'Check the sheet' });
@@ -190,7 +191,8 @@ const minutes = (p, n) => p.clock.fastForward(n * 60_000);
     // ---------- two sheets, and a statement that already holds the same rows ----------
     ({ ctx, p, fake } = await start(browser));
     for (const nm of ['Expenses', 'Expenses']) {
-      await p.getByRole('button', { name: 'Google Sheet', exact: true }).click();
+      await p.getByRole('button', { name: 'Import', exact: true }).click();
+    await p.getByRole('button', { name: 'Continue' }).click();
       await dialog(p).getByLabel('Link to the sheet').fill(LINK);
       await dialog(p).getByRole('button', { name: 'Check the sheet' }).click();
       await shown(dialog(p).getByText('Found 12 transactions'));
@@ -205,7 +207,8 @@ const minutes = (p, n) => p.clock.fastForward(n * 60_000);
 
     // ---------- a phone ----------
     ({ ctx, p, fake } = await start(browser, { viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true }));
-    await p.getByRole('button', { name: 'Google Sheet', exact: true }).click();
+    await p.getByRole('button', { name: 'Import', exact: true }).click();
+    await p.getByRole('button', { name: 'Continue' }).click();
     await dialog(p).getByLabel('Link to the sheet').fill(LINK);
     await dialog(p).getByRole('button', { name: 'Check the sheet' }).click();
     await shown(dialog(p).getByText('Found 12 transactions'));
@@ -229,7 +232,8 @@ const minutes = (p, n) => p.clock.fastForward(n * 60_000);
       'Jan 2027': tab(['3 Jan,Fuel,-600']),
     };
     const G = 'Google Sheet · Budget';
-    await p.getByRole('button', { name: 'Google Sheet', exact: true }).click();
+    await p.getByRole('button', { name: 'Import', exact: true }).click();
+    await p.getByRole('button', { name: 'Continue' }).click();
     await dialog(p).getByLabel('Link to the sheet').fill(LINK);
     await dialog(p).getByRole('radio', { name: /Several tabs/ }).check();
     await dialog(p).getByLabel('Tab names').fill('Nov 2026\nDec 2026');
@@ -263,6 +267,7 @@ const minutes = (p, n) => p.clock.fastForward(n * 60_000);
     check(await wait(async () => (await rows(p, G + ' · Jan 2027')).length === 1) && ((await data(p)).sheets || []).length === 3 && new Set((await data(p)).sheets.map((x) => x.group)).size === 1, 'the new month joins the same group');
 
     // the transaction list can be narrowed to one tab
+    await p.getByRole('button', { name: 'Filters' }).click();
     await p.locator('label.field', { hasText: /^List/ }).locator('select').selectOption(G + ' · Dec 2026');
     check(await shown(p.getByText(/^3 shown/)), 'the List filter narrows the transactions to one month tab');
     await p.locator('label.field', { hasText: /^List/ }).locator('select').selectOption('all');
@@ -277,7 +282,8 @@ const minutes = (p, n) => p.clock.fastForward(n * 60_000);
     check(((await data(p)).sheets || []).length === 3, 'and nothing was added');
 
     // two tabs that come back identical
-    await p.getByRole('button', { name: 'Google Sheet', exact: true }).click();
+    await p.getByRole('button', { name: 'Import', exact: true }).click();
+    await p.getByRole('button', { name: 'Continue' }).click();
     await dialog(p).getByLabel('Link to the sheet').fill(LINK);
     await dialog(p).getByRole('radio', { name: /Several tabs/ }).check();
     await dialog(p).getByLabel('Tab names').fill('Nov 2026\nNov 26');
@@ -298,7 +304,8 @@ const minutes = (p, n) => p.clock.fastForward(n * 60_000);
     // the dialog on a phone, in tab mode
     ({ ctx, p, fake } = await start(browser, { viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true }));
     fake.tabs = { 'Nov 2026': tab(['5 Nov,Coffee,-120']), 'Dec 2026': tab(['2 Dec,Groceries,-800']) };
-    await p.getByRole('button', { name: 'Google Sheet', exact: true }).click();
+    await p.getByRole('button', { name: 'Import', exact: true }).click();
+    await p.getByRole('button', { name: 'Continue' }).click();
     await dialog(p).getByLabel('Link to the sheet').fill(LINK);
     await dialog(p).getByRole('radio', { name: /Several tabs/ }).check();
     await dialog(p).getByLabel('Tab names').fill('Nov 2026\nDec 2026');
