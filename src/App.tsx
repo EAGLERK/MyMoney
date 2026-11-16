@@ -5,7 +5,6 @@ import { DraftsProvider, useDrafts } from './components/Drafts';
 import { LogoLockup } from './components/Logo';
 import { THEMES, type Theme } from './components/ThemeSwitch';
 import avatarRing from './assets/figma/avatar-ring.svg';
-import avatarOrb from './assets/brand/avatar-orb.png';
 import { setSearch, useSearch } from './lib/search';
 import { Notifications } from './components/Notifications';
 import { SheetsProvider } from './components/Sheets';
@@ -177,7 +176,6 @@ function ShellInner() {
             {/* Only for data loaded by an earlier version that had sample data: a way to see what it is and remove it. */}
             {state.txns.some((t) => t.source === 'demo') && <button className="badge watch badge-btn" title="This is sample data. Open Settings to remove it." onClick={() => go('settings')}>Sample<span className="crumb-rest"> data</span></button>}
             {state.onboarded && features.voice && <Voice go={go} theme={theme} setTheme={setTheme} tabs={ALL.map((t) => t.id as VoiceTab)} />}
-            <button className="avatar-btn" aria-label="Your profile and settings" title="Profile and settings" onClick={() => go('settings')}><img src={avatarOrb} alt="" width={60} height={60} /></button>
             {state.onboarded && <Notifications go={go} onTour={startTour} />}
             {/* One main action on every screen, as in the design: it adds a transaction. While there are unsaved changes, Save changes is the main one. */}
             <button className={`btn hero add-btn ${drafts.dirty ? '' : 'primary'}`} data-tour="add" aria-label="Add transaction" onClick={() => go('add-transaction')}>

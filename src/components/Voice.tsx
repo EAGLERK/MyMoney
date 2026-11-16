@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Mascot } from './Mascot';
+import avatarOrb from '../assets/brand/avatar-orb.png';
 import { uid } from '../lib/format';
 import { pulse, popIn, wave } from '../motion';
 import { useStore } from '../store';
@@ -267,8 +268,8 @@ export function Voice({ go, theme, setTheme, tabs }: { go: (tab: string) => void
 
   return (
     <div className="bell-wrap voice-wrap">
-      <button ref={btn} className={`btn voice-btn${listening ? ' live' : ''}`} data-tour="voice" aria-label={`Ask ${ASSISTANT}, your voice assistant`} aria-haspopup="dialog" aria-expanded={open} title={`Ask ${ASSISTANT}`} onClick={opener}>
-        <Icon name="mic" size={18} /><span className="voice-btn-text">Ask {ASSISTANT}</span>
+      <button ref={btn} className={`btn voice-btn agent${listening ? ' live' : ''}`} data-tour="voice" aria-label={`Ask ${ASSISTANT}, your voice assistant`} aria-haspopup="dialog" aria-expanded={open} title={`Ask ${ASSISTANT}`} onClick={opener}>
+        <img className="agent-orb" src={avatarOrb} alt="" width={60} height={60} /><span className="voice-btn-text sr-only">Ask {ASSISTANT}</span>
       </button>
       {open && (
         <div ref={panel} className="notif-panel voice-panel" role="dialog" aria-label={`${ASSISTANT}, your voice assistant`}>

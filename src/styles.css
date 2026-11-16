@@ -983,7 +983,6 @@ ul.files li.sheet-tab { padding-left: 30px; border-top: 0; padding-top: 6px; pad
   .crumbs .badge-btn { min-height: 0; }
   .crumbs .path { display: none; }
   .crumbs .topbar-search { display: flex; margin-right: auto; }
-  .avatar-btn { display: block; }
   .page { gap: clamp(20px, 1.56vw, 30px); }
 }
 .topbar-search { display: none; align-items: center; gap: 10px; height: var(--hero); width: min(440px, 100%); padding: 0 15px; border: 1px solid var(--axis); border-radius: var(--r-lg); background: var(--page); color: var(--text-muted); cursor: text; }
@@ -991,10 +990,11 @@ ul.files li.sheet-tab { padding-left: 30px; border-top: 0; padding-top: 6px; pad
 .topbar-search input { flex: 1; min-width: 0; border: 0; background: none; outline: 0; padding: 0; font-size: clamp(16px, 0.94vw, 18px); letter-spacing: -0.02em; color: var(--text); }
 .topbar-search input::placeholder { color: var(--text-muted); }
 
-/* Profile picture in the top bar (desktop only). */
-.avatar-btn { display: none; flex: none; width: var(--hero); height: var(--hero); padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; overflow: hidden; }
-.avatar-btn img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-.avatar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The AI assistant is the round picture in the top bar (as drawn in the design). */
+.voice-btn.agent { width: var(--hero); min-width: var(--hero); height: var(--hero); min-height: var(--hero); padding: 0; border: 0; border-radius: 50%; background: none; overflow: visible; }
+.voice-btn.agent .agent-orb { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.voice-btn.agent.live { box-shadow: 0 0 0 calc(var(--pulse) * 5px + 2px) var(--accent); border: 0; }
+.voice-btn.agent:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 899px) { .btn.hero.add-btn { min-width: 44px; padding: 0 12px; } .add-btn-text { display: none; } }
 
 /* Page heading and its actions. */
