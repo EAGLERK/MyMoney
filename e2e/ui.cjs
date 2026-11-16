@@ -167,6 +167,15 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     check(await shown(addDlg) && await shown(addDlg.getByLabel('Description', { exact: true })), 'add transaction: the top bar button opens a popup form');
     await addDlg.getByRole('button', { name: 'Cancel' }).click();
     check(!(await p.getByRole('dialog').count()), 'and Cancel closes it');
+    const sideW = () => p.locator('.sidebar').evaluate((e) => Math.round(e.getBoundingClientRect().width));
+    const wide = await sideW();
+    await p.getByRole('button', { name: 'Collapse sidebar' }).click();
+    const narrow = await sideW();
+    check(narrow < wide / 2 && (await p.getByRole('navigation').getByRole('button', { name: 'Goals', exact: true }).count()) === 1 && (await p.locator('.frame').getAttribute('data-nav')) === 'collapsed', `sidebar: Collapse shrinks it to an icon rail (${wide}px to ${narrow}px) and the links keep their names`);
+    await p.reload();
+    check((await p.getByRole('button', { name: 'Expand sidebar' }).count()) === 1, 'sidebar: the choice is remembered after a reload');
+    await p.getByRole('button', { name: 'Expand sidebar' }).click();
+    check((await sideW()) === wide, 'sidebar: Expand brings it back');
     check((await p.locator('.side-foot .user b').innerText()).trim().length > 0 && (await p.locator('.side-foot .avatar').innerText()).trim().length >= 1, 'sidebar: shows who is using the app, with initials');
     await p.getByRole('button', { name: 'Delete all' }).click();
     check(await shown(p.getByRole('dialog')) && (await cssMotion()) === 0, 'dialog: opens with no CSS animation');

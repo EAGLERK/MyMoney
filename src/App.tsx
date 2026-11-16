@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { ConfirmProvider, ToastProvider } from './components/feedback';
 import { Icon, type IconName } from './components/icons';
 import { DraftsProvider, useDrafts } from './components/Drafts';
-import { LogoLockup } from './components/Logo';
+import { Logo, LogoLockup } from './components/Logo';
 import { THEMES, type Theme } from './components/ThemeSwitch';
 import avatarRing from './assets/figma/avatar-ring.svg';
 import { setSearch, useSearch } from './lib/search';
@@ -74,6 +74,9 @@ function ShellInner() {
   const tab = ALL.some((t) => t.id === wanted) ? wanted : 'dashboard';
   const mainRef = useRef<HTMLElement>(null);
   const search = useSearch();
+  // The sidebar can shrink to an icon rail. The choice is remembered on this device.
+  const [navCollapsed, setNavCollapsed] = useState(() => { try { return localStorage.getItem('mymoney:navCollapsed') === '1'; } catch { return false; } });
+  const toggleNav = () => setNavCollapsed((c) => { try { localStorage.setItem('mymoney:navCollapsed', c ? '0' : '1'); } catch { /* storage blocked */ } return !c; });
   const drafts = useDrafts();
   const draftsRef = useRef(drafts);
   draftsRef.current = drafts;
@@ -131,15 +134,15 @@ function ShellInner() {
   const startTour = () => { go('dashboard'); dispatch({ type: 'tour', done: false }); };
 
   return (
-    <div className="frame">
+    <div className="frame" data-nav={navCollapsed ? 'collapsed' : undefined}>
       <button className="skip" onClick={() => mainRef.current?.focus()}>Skip to main content</button>
       <div className="shell">
         <aside className="sidebar">
-          <div className="brand"><LogoLockup height={40} /></div>
+          <div className="brand">{navCollapsed ? <Logo size={44} /> : <LogoLockup height={40} />}</div>
           <nav aria-label="Sections" className="side-group">
             {ALL.map((t) => (
-              <button key={t.id} className="side-link" data-tour={`nav-${t.id}`} aria-current={tab === t.id ? 'page' : undefined} onClick={() => go(t.id)}>
-                <Icon name={t.icon} />{t.label}
+              <button key={t.id} className="side-link" data-tour={`nav-${t.id}`} aria-current={tab === t.id ? 'page' : undefined} title={navCollapsed ? t.label : undefined} onClick={() => go(t.id)}>
+                <Icon name={t.icon} /><span className="nav-label">{t.label}</span>
               </button>
             ))}
           </nav>
@@ -153,7 +156,7 @@ function ShellInner() {
                   : <button className="link-quiet" onClick={() => go('settings')}>Stored on this device. Back up</button>}
               </div>
             </div>
-            {auth?.user && (
+            {auth?.user && !navCollapsed && (
               <div className="row">
                 {sync && (
                   <span className={`sync-chip ${sync.status === 'saved' ? '' : sync.status === 'saving' ? 'saving' : 'bad'}`} role="status">
@@ -163,6 +166,9 @@ function ShellInner() {
                 <button className="btn small" onClick={() => drafts.guard(() => void (sync ? sync.signOutSafely() : auth.signOut()))}>Sign out</button>
               </div>
             )}
+            <button className="side-link collapse-btn" aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!navCollapsed} title={navCollapsed ? 'Expand' : undefined} onClick={toggleNav}>
+              <Icon name={navCollapsed ? 'expand' : 'collapse'} size={32} /><span className="nav-label">Collapse</span>
+            </button>
           </div>
         </aside>
 
