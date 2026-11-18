@@ -1179,7 +1179,7 @@ dialog.add-dialog .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr));
 dialog.add-dialog .form-grid .span-2 { grid-column: 1 / -1; }
 
 /* Settings: tighter sections, and a lighter gap between them. */
-.page:has(.set-section) { gap: 20px; }
+.page:has(.set-section) { gap: 32px; }
 .set-note { font-size: 13px; }
 @media (max-width: 899px) { .set-control .inline-input, .profile-head .field input { min-height: 44px; font-size: 16px; } .set-control { flex-basis: 100%; } .set-control .theme-switch { margin-left: 0; } }
 @media (max-width: 899px) { .frame { --hero: 44px; } }
@@ -1197,3 +1197,14 @@ dialog.add-dialog .form-grid .span-2 { grid-column: 1 / -1; }
   .frame[data-nav='collapsed'] .nav-label, .frame[data-nav='collapsed'] .user-info { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   .frame[data-nav='collapsed'] .user { justify-content: center; }
 }
+
+/* Settings: every group reads as a section, not a boxed card. */
+.page:has(.set-section) > section.card { background: none; border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+.page:has(.set-section) > section.card > .card-head { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); align-items: center; }
+.page:has(.set-section) > section.card > .card-head h2 { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.page:has(.set-section) > section.card > .card-head .sub { font-size: 13px; }
+.page:has(.set-section) .table td { font-size: 14px; padding: 8px 10px; }
+.page:has(.set-section) .table .inline-input { min-height: 36px; width: 96px; }
+.page:has(.set-section) h3 { font-size: 14px; font-weight: 600; margin: 12px 0 4px; }
+.page:has(.set-section) .danger-zone { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+@media (max-width: 899px) { .page:has(.set-section) .table .inline-input { min-height: 44px; } }

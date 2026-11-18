@@ -66,7 +66,7 @@ const mitra = async (p, text) => {
     await nav(p, 'Settings');
     await shown(p.getByRole('heading', { name: 'Country and currency' }));
     let text = await body(p);
-    check(/Country and currency/.test(text) && (await p.getByLabel('Country').inputValue()) === 'US' && (await p.getByLabel('Currency').inputValue()) === 'USD', 'Settings shows the country and currency');
+    check(/Country and currency/i.test(text) && (await p.getByLabel('Country').inputValue()) === 'US' && (await p.getByLabel('Currency').inputValue()) === 'USD', 'Settings shows the country and currency');
     check(!/Salaried \(Rs/.test(text) && /no tax estimate for your country/.test(text), 'the India tax estimate and its salaried box are not shown');
     check(!/Varies a lot by city and locality/.test(text), 'and India\'s sourced assumption notes are not shown');
     check(/These are placeholders, not rates for your country/.test(text) && !/RBI|small-savings|PPF|SBI/.test(text), 'the rates are labelled placeholders, with no India sources');

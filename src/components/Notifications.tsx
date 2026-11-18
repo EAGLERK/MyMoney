@@ -198,7 +198,7 @@ export function NotificationSettings() {
                 <button className="btn" onClick={() => { disableBrowserAlerts(); refresh(); toast('Browser alerts are off'); }}>Turn off</button>
               </>
             ) : (
-              <button className="btn primary" onClick={() => void turnOn()}><Icon name="bell" size={16} />Turn on browser alerts</button>
+              <button className="btn outline-accent" onClick={() => void turnOn()}><Icon name="bell" size={16} />Turn on browser alerts</button>
             )}
           </div>
         )}

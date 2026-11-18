@@ -25,7 +25,7 @@ const initials = (name: string): string => {
 /** A titled group of settings: the heading is a small capitalised label, each row an icon, a label, and its control on the right. */
 function SettingsSection({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <section className="set-section" aria-label={title}>
+    <section className="set-section">
       <h2>{title}</h2>
       {note && <p className="sub set-note">{note}</p>}
       <div className="set-rows">{children}</div>
@@ -313,20 +313,18 @@ function RegionCard() {
     toast(`Country set to ${c?.name ?? code}. Amounts are shown in ${c?.currency ?? d.currency}; existing amounts were not converted.`);
   };
   return (
-    <Card title="Country and currency" sub="Sets the currency amounts are written in, how numbers are grouped, and which country-specific tools are offered.">
-      <div className="form-grid">
-        <Field label="Country">
-          <select value={state.profile.country ?? 'IN'} onChange={(e) => setCountry(e.target.value)}>
-            {!countryOf(state.profile.country ?? 'IN') && <option value={state.profile.country}>{state.profile.country}</option>}
-            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-          </select>
-        </Field>
-        <Field label="Currency" hint="Changing it changes how amounts are shown. It does not convert amounts you already have.">
-          <select value={d.currency} onChange={(e) => dispatch({ type: 'profile', patch: { currency: e.target.value } })}>
-            {options.map((c) => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
-          </select>
-        </Field>
-      </div>
-    </Card>
+    <SettingsSection title="Country and currency" note="Sets the currency amounts are written in, how numbers are grouped, and which country-specific tools are offered.">
+      <SettingsRow icon="f-bank" label="Country">
+        <select className="inline-input" aria-label="Country" value={state.profile.country ?? 'IN'} onChange={(e) => setCountry(e.target.value)}>
+          {!countryOf(state.profile.country ?? 'IN') && <option value={state.profile.country}>{state.profile.country}</option>}
+          {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+        </select>
+      </SettingsRow>
+      <SettingsRow icon="f-rupee" label="Currency" hint="Changing it changes how amounts are shown. It does not convert amounts you already have.">
+        <select className="inline-input" aria-label="Currency" value={d.currency} onChange={(e) => dispatch({ type: 'profile', patch: { currency: e.target.value } })}>
+          {options.map((c) => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
+        </select>
+      </SettingsRow>
+    </SettingsSection>
   );
 }
