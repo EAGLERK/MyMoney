@@ -9,7 +9,7 @@ import { earliestMonths, GOAL_DEFAULTS, newGoal, planGoal, type PlanContext } fr
 import type { Goal, GoalKind } from '../engine/types';
 import { Icon, type IconName } from '../components/icons';
 import { useToast } from '../components/feedback';
-import { Badge, Callout, Card, Field, Num, NumInput } from '../components/ui';
+import { Badge, Callout, Card, Field, Hint, Num, NumInput } from '../components/ui';
 import { money, moneyCompact, monthLabel, monthsText, pct, uid, cur } from '../lib/format';
 import { features } from '../features';
 import { useStore } from '../store';
@@ -23,17 +23,27 @@ const CHOICES: Array<{ kind: GoalKind; icon: IconName; title: string; hint: stri
   { kind: 'other', icon: 'target', title: 'Something else', hint: 'Any one-off purchase, saved for in cash' },
 ];
 
-function GoalChooser({ onPick }: { onPick: (k: GoalKind) => void }) {
+/** The "Add a goal" popup: pick a type and the goal is created and opens its details. */
+function GoalPicker({ onPick, onClose }: { onPick: (k: GoalKind) => void; onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const el = ref.current; if (el && !el.open) { el.showModal(); dialogIn(el); el.querySelector<HTMLElement>('.choice')?.focus(); } }, []);
   return (
-    <div className="chooser" role="group" aria-label="Choose what you are saving for">
-      {CHOICES.map((c) => (
-        <button key={c.kind} className="choice" onClick={() => onPick(c.kind)}>
-          <span className="icon-tile"><Icon name={c.icon} size={22} /></span>
-          <b>{c.title}</b>
-          <span className="sub">{c.hint}</span>
-        </button>
-      ))}
-    </div>
+    <dialog ref={ref} className="modal goal-pick" aria-labelledby="pick-title" onCancel={(e) => { e.preventDefault(); onClose(); }} onClick={(e) => { if (e.target === ref.current) onClose(); }}>
+      <div className="import-body">
+        <div className="import-head">
+          <h2 id="pick-title">Add a goal<Hint text="Pick one. You can change every number afterwards." /></h2>
+          <button className="btn icon small ghost" type="button" aria-label="Close" onClick={onClose}><Icon name="f-close" size={20} /></button>
+        </div>
+        <div className="chooser" role="group" aria-label="Choose what you are saving for">
+          {CHOICES.map((c) => (
+            <button key={c.kind} className="choice" onClick={() => onPick(c.kind)}>
+              <span className="icon-tile"><Icon name={c.icon} size={40} /></span>
+              <span className="choice-text"><b>{c.title}</b><span className="sub">{c.hint}</span></span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </dialog>
   );
 }
 
@@ -77,8 +87,8 @@ export function Goals() {
           <div className="sub">What you are saving for, and what it takes to get there</div>
         </div>
         <div className="head-actions">
-          <button className="btn hero outline-accent" aria-expanded={choosing} onClick={() => setChoosing((c) => !c)}>
-            <Icon name={choosing ? 'close' : 'plus'} size={18} />{choosing ? 'Cancel' : 'Add a goal'}
+          <button className="btn hero outline-accent" aria-haspopup="dialog" onClick={() => setChoosing(true)}>
+            <Icon name="plus" size={18} />Add a goal
           </button>
         </div>
       </div>
@@ -90,13 +100,9 @@ export function Goals() {
         <Callout tone="info">The loan rates and price growth below are placeholders, not figures for your country. Set the rate you were quoted in Settings, under Rates and assumptions.</Callout>
       )}
 
-      {choosing && (
-        <Card title="What are you saving for?" hint="Pick one. You can change every number afterwards.">
-          <GoalChooser onPick={add} />
-        </Card>
-      )}
+      {choosing && <GoalPicker onPick={add} onClose={() => setChoosing(false)} />}
 
-      {plans.length === 0 && !choosing && (
+      {plans.length === 0 && (
         <Card>
           <div className="empty-cta">
             <h2>No goals yet</h2>

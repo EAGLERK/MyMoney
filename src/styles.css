@@ -1229,3 +1229,12 @@ dialog.add-dialog .form-grid .span-2 { grid-column: 1 / -1; }
 @media (max-width: 899px) { .hint-btn { width: 44px; height: 44px; margin: -11px -11px; } }
 .set-details summary { display: flex; align-items: center; min-height: 36px; }
 @media (max-width: 899px) { .set-details summary { min-height: 44px; } }
+
+/* Add a goal: the popup (two columns, icon beside the text, as in the Figma design). */
+dialog.goal-pick { width: min(840px, calc(100vw - 32px)); border-radius: 16px; }
+.goal-pick .chooser { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.goal-pick .choice { flex-direction: row; align-items: center; gap: 20px; padding: 20px; min-height: 104px; }
+.goal-pick .choice .icon-tile { width: 52px; height: 52px; background: none; color: var(--accent-text); }
+.goal-pick .choice-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.goal-pick .choice:last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (max-width: 599px) { .goal-pick .chooser { grid-template-columns: minmax(0, 1fr); gap: 12px; } .goal-pick .choice { min-height: 80px; padding: 16px; gap: 16px; } }

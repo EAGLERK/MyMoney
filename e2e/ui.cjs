@@ -223,8 +223,12 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     const goalCards = () => p.locator('main section.card h2', { hasText: /\(\d.*away\)|away/ }).count();
     const goalsBefore = await p.locator('.goal-row').count();
     await p.getByRole('button', { name: 'Add a goal' }).click();
+    check(await shown(p.getByRole('dialog', { name: 'Add a goal' })), 'Add a goal opens a popup, not a card in the page');
     const options = await p.getByRole('group', { name: 'Choose what you are saving for' }).getByRole('button').allInnerTexts();
     check(options.length === 5, `the chooser offers five labelled options (${options.map((o) => o.split('\n')[0]).join(', ')})`);
+    await p.keyboard.press('Escape');
+    check(!(await p.getByRole('dialog').count()), 'Escape closes the popup without adding a goal');
+    await p.getByRole('button', { name: 'Add a goal' }).click();
     await p.getByRole('button', { name: /^Bike/ }).click();
     check(await shown(p.locator('.toast', { hasText: 'Bike goal added' })), 'picking a type adds the goal and confirms it');
     check(await shown(p.getByRole('dialog')), 'the new goal opens its details at once');
