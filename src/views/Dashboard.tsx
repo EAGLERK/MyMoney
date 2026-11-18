@@ -1,6 +1,6 @@
 import { emiWord } from '../lib/region';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { addMonths, insights, series, summarize } from '../engine/cashflow';
+import { addMonths, series, summarize } from '../engine/cashflow';
 import { planGoal } from '../engine/goals';
 import { Icon, type IconName } from '../components/icons';
 import { Callout, Card, Empty } from '../components/ui';
@@ -60,7 +60,6 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
   const cur = useMemo(() => summarize(state.txns, month), [state.txns, month]);
   const prev = useMemo(() => summarize(state.txns, addMonths(month, -1)), [state.txns, month]);
   const trend = useMemo(() => series(state.txns, month, Number(range)), [state.txns, month, range]);
-  const notes = useMemo(() => insights(state.txns, month), [state.txns, month]);
   const recent = useMemo(() => [...state.txns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5), [state.txns]);
   const page = useRef<HTMLDivElement>(null);
   const first = state.profile.name.trim().split(/\s+/)[0];
@@ -91,8 +90,6 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
   const p = d.portfolio;
   const ctx = { today: d.today, rates: d.rates, monthlyIncome: d.plan.income, existingEmi: d.plan.existingEmi, marginal: d.marginal, annualIncome: state.profile.annualGrossIncome };
   const hasData = cur.txnCount > 0;
-  const needsPct = cur.income > 0 ? cur.needs / cur.income : 0;
-  const wantsPct = cur.income > 0 ? cur.wants / cur.income : 0;
   const savePct = cur.income > 0 ? cur.saved / cur.income : 0;
   const saveTone: PillTone = cur.income <= 0 ? 'plain' : savePct >= 0.2 ? 'good' : savePct >= 0 ? 'watch' : 'bad';
   const rangeSaved = trend.reduce((a, t) => a + t.saved, 0);
@@ -225,21 +222,8 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
         </Card>
       )}
 
-      <div className="grid g2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))' }}>
-        <Card title="50 / 30 / 20 check" sub="Guide: needs 50%, wants 30%, saving 20% of income">
-          {cur.income > 0 ? (
-            <dl className="kv">
-              <dt>Needs <span className="muted small">(target 50%)</span></dt><dd className={needsPct > 0.5 ? 'watch' : 'good'}>{needsPct > 0.5 ? '! ' : '✓ '}{pct(needsPct * 100, 0)} &middot; {money(cur.needs)}</dd>
-              <dt>Wants <span className="muted small">(target 30%)</span></dt><dd className={wantsPct > 0.3 ? 'watch' : 'good'}>{wantsPct > 0.3 ? '! ' : '✓ '}{pct(wantsPct * 100, 0)} &middot; {money(cur.wants)}</dd>
-              <dt>Saved <span className="muted small">(target 20%+)</span></dt><dd className={savePct < 0.2 ? 'watch' : 'good'}>{savePct < 0.2 ? '! ' : '✓ '}{pct(savePct * 100, 0)} &middot; {money(cur.saved)}</dd>
-            </dl>
-          ) : <p className="sub">Needs income recorded for the month.</p>}
-          <div style={{ marginTop: 14 }} className="stack">
-            {notes.map((n, i) => <Callout key={i} tone={n.level}>{n.text}</Callout>)}
-          </div>
-        </Card>
-
-        {features.investing && (
+      {features.investing && (
+        <div className="grid g2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))' }}>
           <Card title="What you own" sub="By asset class" right={<button className="btn small" onClick={() => go('investments')}>Manage</button>}>
             {p.total > 0 ? (
               <StackedBar parts={[
@@ -267,8 +251,8 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
               </div>
             )}
           </Card>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
