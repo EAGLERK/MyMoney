@@ -138,7 +138,7 @@ function ShellInner() {
       <button className="skip" onClick={() => mainRef.current?.focus()}>Skip to main content</button>
       <div className="shell">
         <aside className="sidebar">
-          <div className="brand">{navCollapsed ? <Logo size={44} /> : <LogoLockup height={40} />}</div>
+          <div className="brand">{navCollapsed ? <Logo size={36} /> : <LogoLockup height={40} />}</div>
           <nav aria-label="Sections" className="side-group">
             {ALL.map((t) => (
               <button key={t.id} className="side-link" data-tour={`nav-${t.id}`} aria-current={tab === t.id ? 'page' : undefined} title={navCollapsed ? t.label : undefined} onClick={() => go(t.id)}>
@@ -167,7 +167,7 @@ function ShellInner() {
               </div>
             )}
             <button className="side-link collapse-btn" aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!navCollapsed} title={navCollapsed ? 'Expand' : undefined} onClick={toggleNav}>
-              <Icon name={navCollapsed ? 'expand' : 'collapse'} size={32} /><span className="nav-label">Collapse</span>
+              <Icon name={navCollapsed ? 'expand' : 'collapse'} size={20} /><span className="nav-label">Collapse</span>
             </button>
           </div>
         </aside>
