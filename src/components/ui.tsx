@@ -1,22 +1,40 @@
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from './icons';
 
 /** A small (i) that explains something on hover, keyboard focus or tap. The text stays in the page for screen readers, so nothing is lost; it just is not in the way. */
 export function Hint({ text, label = 'More information' }: { text: ReactNode; label?: string }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const btn = useRef<HTMLButtonElement>(null);
+  const bubble = useRef<HTMLSpanElement>(null);
+  /** Whether the bubble was already open when a press began: hover or focus opens it before the click arrives, so a click must not simply toggle. */
+  const openAtPress = useRef<boolean | null>(null);
   useEffect(() => {
     if (!open) return;
     const away = (e: PointerEvent) => { if (!(e.target as Element | null)?.closest(`[data-hint="${CSS.escape(id)}"]`)) setOpen(false); };
+    const close = () => setOpen(false);
     document.addEventListener('pointerdown', away);
-    return () => document.removeEventListener('pointerdown', away);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => { document.removeEventListener('pointerdown', away); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
   }, [open, id]);
+  // The bubble goes into the browser's top layer, so a dialog or card edge can never clip it, and is placed
+  // under the button, kept inside the window, and flipped above when there is no room below.
+  useLayoutEffect(() => {
+    const el = bubble.current, b = btn.current;
+    if (!el || !b) return;
+    if (!open) { if (el.matches(':popover-open')) el.hidePopover(); return; }
+    if (typeof el.showPopover === 'function' && !el.matches(':popover-open')) el.showPopover();
+    const r = b.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight, m = 8;
+    el.style.left = `${Math.max(m, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - m))}px`;
+    el.style.top = `${r.bottom + 6 + h > window.innerHeight - m && r.top - 6 - h > m ? r.top - 6 - h : r.bottom + 6}px`;
+  }, [open]);
   return (
     <span className="hint-wrap" data-hint={id} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
-      <button type="button" className="hint-btn" aria-label={label} aria-describedby={id} aria-expanded={open} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onClick={(e) => { e.preventDefault(); setOpen((o) => !o); }}>
+      <button ref={btn} type="button" className="hint-btn" aria-label={label} aria-describedby={id} aria-expanded={open} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onPointerDown={() => { openAtPress.current = open; }} onClick={(e) => { e.preventDefault(); setOpen(openAtPress.current === null ? true : !openAtPress.current); openAtPress.current = null; }}>
         <Icon name="info" size={16} />
       </button>
-      <span id={id} role="tooltip" aria-hidden="true" className={open ? 'hint-bubble open' : 'hint-bubble'}>{text}</span>
+      <span ref={bubble} id={id} popover="manual" role="tooltip" aria-hidden="true" className={open ? 'hint-bubble open' : 'hint-bubble'}>{text}</span>
     </span>
   );
 }

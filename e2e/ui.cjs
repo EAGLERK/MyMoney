@@ -224,6 +224,10 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     const goalsBefore = await p.locator('.goal-row').count();
     await p.getByRole('button', { name: 'Add a goal' }).click();
     check(await shown(p.getByRole('dialog', { name: 'Add a goal' })), 'Add a goal opens a popup, not a card in the page');
+    await p.getByRole('dialog', { name: 'Add a goal' }).getByRole('button', { name: 'More information' }).click();
+    check(await p.evaluate(() => { const e = document.querySelector('.hint-bubble.open'); if (!e) return false; const r = e.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + 6, r.top + 6); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight && !!hit && (hit === e || e.contains(hit)); }), 'a tooltip inside a popup is whole and on top, not cut off by the popup edge');
+    await p.keyboard.press('Escape');
+    await p.getByRole('button', { name: 'Add a goal' }).click();
     const options = await p.getByRole('group', { name: 'Choose what you are saving for' }).getByRole('button').allInnerTexts();
     check(options.length === 5, `the chooser offers five labelled options (${options.map((o) => o.split('\n')[0]).join(', ')})`);
     await p.keyboard.press('Escape');
