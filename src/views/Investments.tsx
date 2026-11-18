@@ -66,7 +66,7 @@ export function Investments() {
             {p.total > 0 && p.byClass.cash / p.total > 0.2 && <div style={{ marginTop: 12 }}><Callout tone="watch">{pct((p.byClass.cash / p.total) * 100, 0)} of your money sits in savings accounts. Keep an emergency fund there, but move the rest to something that beats inflation.</Callout></div>}
           </Card>
 
-          <Card title="Your holdings, best to worst" sub="Ranked by return after tax and inflation, not by the headline rate">
+          <Card title="Your holdings, best to worst" hint="Ranked by return after tax and inflation, not by the headline rate">
             <div className="table-wrap">
               <table className="table num cards">
                 <thead><tr><th>Holding</th><th className="r">Value</th><th className="r">Gain</th><th className="r">Rate</th><th className="r">After tax</th><th className="r">Real</th><th>Verdict</th><th /></tr></thead>
@@ -124,7 +124,7 @@ function InvestmentForm({ initial, onClose }: { initial: Investment; onClose: ()
   const defaultRate = v.kind === 'fd' ? d.rates.fd : v.kind === 'rd' ? d.rates.rd : v.kind === 'ppf' ? d.rates.ppf : v.kind === 'savings' ? d.rates.savings : 0;
 
   return (
-    <Card title={initial.name ? `Edit ${initial.name}` : 'New investment'} sub="Fields marked * are required">
+    <Card title={initial.name ? `Edit ${initial.name}` : 'New investment'} hint="Fields marked * are required">
       <div className="form-grid">
         <Field label="Type"><select value={v.kind} onChange={(e) => { const k = e.target.value as InvestmentKind; set({ kind: k, tenureMonths: k === 'fd' ? 12 : k === 'rd' ? 12 : 0, emergency: k === 'savings' }); }}>{KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}</select></Field>
         <Field label="Name" required><input value={v.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. SBI 1-year FD" /></Field>
@@ -164,7 +164,7 @@ function Compare() {
   const bad = rows.filter((r) => r.verdict === 'avoid');
 
   return (
-    <Card title="Where should new money go?" sub="Pick an amount and how long you can leave it. Instruments are ranked on what you keep after tax and inflation, among those safe for that horizon and your risk profile.">
+    <Card title="Where should new money go?" hint="Pick an amount and how long you can leave it. Instruments are ranked on what you keep after tax and inflation, among those safe for that horizon and your risk profile.">
       <div className="form-grid" style={{ marginBottom: 14 }}>
         <Num label="One-time amount (₹)" value={lump} onChange={setLump} min={0} />
         <Num label="Monthly amount (₹)" value={monthly} onChange={setMonthly} min={0} />
@@ -225,7 +225,7 @@ function DepositCalc() {
   const real = realReturn(posttax, d.rates.inflation);
 
   return (
-    <Card title="FD / RD calculator" sub="Quarterly compounding, as Indian banks do it">
+    <Card title="FD / RD calculator" hint="Quarterly compounding, as Indian banks do it">
       <div className="form-grid">
         <Field label="Type" wide><Toggle label="Deposit type" value={kind} onChange={(k) => { setKind(k); setRate(k === 'fd' ? d.rates.fd : d.rates.rd); }} options={[['fd', 'Fixed deposit'], ['rd', 'Recurring deposit']]} /></Field>
         <Num label={kind === 'fd' ? 'Deposit (₹)' : 'Monthly instalment (₹)'} value={amount} onChange={setAmount} min={0} />

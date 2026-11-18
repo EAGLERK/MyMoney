@@ -61,7 +61,7 @@ export function Notes() {
       </div>
 
       {choosing && (
-        <Card title="What do you want to keep track of?" sub="Pick a starting point. You can add text, tables and to-do lists to any note.">
+        <Card title="What do you want to keep track of?" hint="Pick a starting point. You can add text, tables and to-do lists to any note.">
           <div className="chooser" role="group" aria-label="Choose a starting point">
             {STARTS.map((s) => (
               <button key={s.kind} className="choice" onClick={() => start(s.kind)}>

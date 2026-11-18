@@ -9,7 +9,7 @@ import { dateOrderFor, isIndia, moneyContext } from '../lib/region';
 import { SheetList, useSheets } from '../components/Sheets';
 import type { Txn } from '../engine/types';
 import { Icon } from '../components/icons';
-import { Callout, Card, Field, Num } from '../components/ui';
+import { Callout, Card, Field, Hint, Num } from '../components/ui';
 import { rowProblem, useDrafts } from '../components/Drafts';
 import { useConfirm, useToast } from '../components/feedback';
 import { money, monthLabel, todayISO, uid, cur, moneyExact } from '../lib/format';
@@ -275,10 +275,9 @@ function AddForm({ onDone }: { onDone: () => void }) {
     <dialog ref={ref} className="modal add-dialog" aria-labelledby="add-title" onCancel={(e) => { e.preventDefault(); onDone(); }} onClick={(e) => { if (e.target === ref.current) onDone(); }}>
       <form className="import-body" onSubmit={(e) => { e.preventDefault(); if (!missing) add(); }}>
         <div className="import-head">
-          <h2 id="add-title">New transaction</h2>
+          <h2 id="add-title">New transaction<Hint text="Fields marked * are required. It is added to the list and kept when you press Save changes." /></h2>
           <button className="btn icon small ghost" type="button" aria-label="Close" onClick={onDone}><Icon name="f-close" size={20} /></button>
         </div>
-        <p className="sub">Fields marked * are required. It is added to the list and kept when you press Save changes.</p>
         <div className="form-grid">
           <Field label="Type"><select value={type} onChange={(e) => { setType(e.target.value as 'income' | 'expense'); setCat(''); }}><option value="expense">Expense</option><option value="income">Income</option></select></Field>
           <Field label="Date" required><input type="date" value={date} max={todayISO()} onClick={openCalendar} onChange={(e) => setDate(e.target.value)} /></Field>
@@ -376,7 +375,7 @@ function ImportCard({ open, onClose }: { open: boolean; onClose: () => void }) {
       />
       {open && <ImportDialog onClose={onClose} onPickFile={() => picker.current?.click()} onSheet={(link) => sheets.openConnect(link)} />}
       {hasSources && (
-        <Card title="Imported sources" sub="Files and Google Sheets that your transactions came from">
+        <Card title="Imported sources" hint="Files and Google Sheets that your transactions came from">
           {warning && <Callout tone="watch">{warning}</Callout>}
           <SheetList />
           {notes.length > 0 && <Callout tone="info"><span>{notes.join(' ')}</span></Callout>}

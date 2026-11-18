@@ -1,10 +1,10 @@
 import avatarRing from '../assets/figma/avatar-ring.svg';
-import { ThemeSwitch, type Theme } from '../components/ThemeSwitch';
 import type { IconName } from '../components/icons';
+import { ThemeSwitch, type Theme } from '../components/ThemeSwitch';
 import { COUNTRIES, countryOf, currencyChoices, emiWords, isIndia } from '../lib/region';
 import { useMemo, useRef, useState } from 'react';
 import type { Assumption } from '../engine/assumptions';
-import { Badge, Callout, Card, Field, NumInput, PasswordInput, Toggle } from '../components/ui';
+import { Badge, Callout, Card, Field, NumInput, PasswordInput, SettingsRow, SettingsSection, Toggle } from '../components/ui';
 import { InstallCard } from '../components/Install';
 import { NotificationSettings } from '../components/Notifications';
 import { pct, cur } from '../lib/format';
@@ -21,25 +21,6 @@ const initials = (name: string): string => {
   const w = name.trim().split(/\s+/).filter(Boolean);
   return ((w[0]?.[0] ?? '') + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase() || 'M';
 };
-
-/** A titled group of settings: the heading is a small capitalised label, each row an icon, a label, and its control on the right. */
-function SettingsSection({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
-  return (
-    <section className="set-section">
-      <h2>{title}</h2>
-      {note && <p className="sub set-note">{note}</p>}
-      <div className="set-rows">{children}</div>
-    </section>
-  );
-}
-function SettingsRow({ icon, label, hint, children }: { icon: IconName; label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="set-row">
-      <span className="set-label"><Icon name={icon} size={24} /><span>{label}{hint && <span className="hint">{hint}</span>}</span></span>
-      <div className="set-control">{children}</div>
-    </div>
-  );
-}
 
 const STATUS_TONE = { verified: 'good', check: 'watch', estimate: undefined } as const;
 const STATUS_HELP = {
@@ -131,7 +112,7 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
         <Field label="Last name"><input value={last} onChange={(e) => dispatch({ type: 'profile', patch: { name: `${first} ${e.target.value}`.trim() } })} /></Field>
       </div>
 
-      <SettingsSection title="About" note={india ? 'Used for tax slab, equity share and fallbacks until you import transactions' : 'Used as fallbacks until you import transactions, and to check a house price against your income'}>
+      <SettingsSection title="About" hint={india ? 'Used for tax slab, equity share and fallbacks until you import transactions' : 'Used as fallbacks until you import transactions, and to check a house price against your income'}>
         {auth?.user && <SettingsRow icon="f-mail" label="Email address"><span className="set-value">{auth.user.email || auth.user.phone}</span></SettingsRow>}
         <SettingsRow icon="f-rupee" label={`Monthly take home (${cur()})`}><NumInput className="inline-input" aria-label="Monthly take-home" value={p.monthlyIncome} onChange={(n) => dispatch({ type: 'profile', patch: { monthlyIncome: n } })} /></SettingsRow>
         <SettingsRow icon="f-rupee" label={`Monthly spend (${cur()})`} hint={`Including rent and ${emiWords()}`}><NumInput className="inline-input" aria-label="Monthly spend" value={p.monthlyExpenses} onChange={(n) => dispatch({ type: 'profile', patch: { monthlyExpenses: n } })} /></SettingsRow>
@@ -158,78 +139,70 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
 
       <RegionCard />
 
-      <Card title="Rates and assumptions" sub={features.investing ? 'Every number the planner uses. Change any of them; reset returns the default.' : 'The numbers your goals use. Change any of them; reset returns the default.'}>
-        <div className="stack">
-          {features.investing ? (
-            <Callout tone="info">
-              <b>Verified</b> rates come from the 30 Sep 2026 small-savings notification and the 7 Oct 2026 RBI policy. <b>Check</b> rates differ by bank: aggregator sites disagreed on SBI&rsquo;s 1-year FD by 25 bps, so enter your bank&rsquo;s own. <b>Estimates</b> are modelling choices. Press reports were the source, not the primary notifications, so confirm before a large decision.
-            </Callout>
-          ) : (
-            <Callout tone="info">{india ? 'Loan rates differ by lender, so enter the rate you were actually quoted. House, car and bike price growth are estimates, not forecasts.' : 'These are placeholders, not rates for your country. Enter the loan rate you were quoted and the price growth you expect; until you do, goal plans use the placeholders. Interest on savings is assumed to be 0.'}</Callout>
-          )}
-          {groups.map((g) => (
-            <div key={g}>
-              <h3 style={{ margin: '8px 0' }}>{g}</h3>
-              <div className="table-wrap">
-                <table className="table num">
-                  <tbody>
-                    {d.assumptions.filter((a) => a.group === g).map((a) => <AssumptionRow key={a.key} a={a} overridden={a.key in state.overrides} />)}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <SettingsSection
+        title="Rates and assumptions"
+        hint={(features.investing ? 'Every number the planner uses. Change any of them; reset returns the default. ' : 'The numbers your goals use. Change any of them; reset returns the default. ') + (features.investing
+          ? 'Verified rates come from the 30 Sep 2026 small-savings notification and the 7 Oct 2026 RBI policy. Check rates differ by bank: aggregator sites disagreed on SBI\u2019s 1-year FD by 25 bps, so enter your bank\u2019s own. Estimates are modelling choices. Press reports were the source, not the primary notifications, so confirm before a large decision.'
+          : india ? 'Loan rates differ by lender, so enter the rate you were actually quoted. House, car and bike price growth are estimates, not forecasts.' : 'These are placeholders, not rates for your country. Enter the loan rate you were quoted and the price growth you expect; until you do, goal plans use the placeholders. Interest on savings is assumed to be 0.')}
+      >
+        {groups.map((g) => (
+          <div key={g} className="set-group">
+            <h3>{g}</h3>
+            {d.assumptions.filter((a) => a.group === g).map((a) => <AssumptionRow key={a.key} a={a} overridden={a.key in state.overrides} />)}
+          </div>
+        ))}
+      </SettingsSection>
 
       <NotificationSettings />
 
       <InstallCard />
 
-      <Card title="Quick tour" sub="A few short tips that point at the main controls. They appear once; you can replay them here.">
-        <button className="btn" onClick={() => { location.hash = 'dashboard'; dispatch({ type: 'tour', done: false }); }}>Take the tour again</button>
-      </Card>
+      <SettingsSection title="Quick tour" hint="A few short tips that point at the main controls. They appear once; you can replay them here.">
+        <SettingsRow icon="f-goal" label="Replay the tips"><button className="btn" onClick={() => { location.hash = 'dashboard'; dispatch({ type: 'tour', done: false }); }}>Take the tour again</button></SettingsRow>
+      </SettingsSection>
 
-      <Card title="Your data" sub={auth?.user ? 'Stored in your MyMoney account and synced across your devices. Other users cannot read it.' : 'Everything is stored in this browser only. Nothing is sent anywhere.'}>
-        <div className="stack">
-          <div className="row">
+      <SettingsSection title="Your data" hint={(auth?.user ? 'Stored in your MyMoney account and synced across your devices. Other users cannot read it. Your account keeps a copy on the server; a downloaded backup is still a good second copy.' : 'Everything is stored in this browser only. Nothing is sent anywhere. Browser storage can be wiped by clearing site data, so download a backup now and then.')}>
+        <SettingsRow icon="f-database" label="Backup">
+          <span className="row">
             <button className="btn" onClick={exportJson}>Download backup</button>
             <button className="btn" onClick={copyBackup}>Copy backup</button>
             <button className="btn" onClick={() => file.current?.click()}>Restore from file</button>
             <input ref={file} type="file" accept="application/json" hidden aria-label="Backup file" onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ''; }} />
+          </span>
+        </SettingsRow>
+        <details className="set-details">
+          <summary>Restore from pasted text</summary>
+          <div className="stack" style={{ marginTop: 10 }}>
+            <Field label="Backup text" hint="Copy backup fills this in. To restore, paste a backup here.">
+              <textarea id="backup-text" rows={3} value={backupText} onChange={(e) => setBackupText(e.target.value)} />
+            </Field>
+            <div><button className="btn" disabled={!backupText.trim()} onClick={() => restore(backupText)}>Restore from text</button></div>
           </div>
-          <Field label="Backup text" hint="Copy backup fills this in. To restore, paste a backup here.">
-            <textarea id="backup-text" rows={3} value={backupText} onChange={(e) => setBackupText(e.target.value)} />
-          </Field>
-          <div><button className="btn" disabled={!backupText.trim()} onClick={() => restore(backupText)}>Restore from text</button></div>
-          {msg && <Callout tone={msg.tone}>{msg.text}</Callout>}
-          <p className="sub">{auth?.user ? 'Your account keeps a copy on the server. A downloaded backup is still a good second copy.' : 'Browser storage can be wiped by clearing site data. Download a backup now and then.'}</p>
-        </div>
+        </details>
+        {msg && <Callout tone={msg.tone}>{msg.text}</Callout>}
+      </SettingsSection>
 
-        <div className="danger-zone">
-          <h3>Danger zone</h3>
-          <p className="sub">These remove your data. You will be asked to confirm.</p>
-          <div className="row">
-            {hasSample && <button className="btn danger" onClick={removeSample}>Remove sample data</button>}
-            <button className="btn danger" onClick={eraseAll}><Icon name="trash" size={16} />Erase all data</button>
-          </div>
-        </div>
-      </Card>
+      <SettingsSection title="Danger zone" hint="These remove your data. You will be asked to confirm.">
+        {hasSample && <SettingsRow icon="f-trash" label="Sample data"><button className="btn danger" onClick={removeSample}>Remove sample data</button></SettingsRow>}
+        <SettingsRow icon="f-trash" label="Everything"><button className="btn danger" onClick={eraseAll}><Icon name="trash" size={16} />Erase all data</button></SettingsRow>
+      </SettingsSection>
     </div>
   );
 }
 
+const assumptionIcon = (key: string, group: string): IconName => (/house/i.test(key) ? 'house' : /car/i.test(key) ? 'car' : /bike/i.test(key) ? 'bike' : group === 'Loans' ? 'f-bank' : 'f-chart');
+
 function AssumptionRow({ a, overridden }: { a: Assumption; overridden: boolean }) {
   const { dispatch } = useStore();
   return (
-    <tr>
-      <td style={{ width: '30%' }}>{a.label}</td>
-      <td style={{ width: 120 }}><NumInput className="inline-input" aria-label={a.label} value={a.value} onChange={(n) => dispatch({ type: 'override', key: a.key, value: n })} /></td>
-      <td style={{ width: 30 }}>%</td>
-      <td style={{ width: 110 }}><Badge tone={STATUS_TONE[a.status]} title={STATUS_HELP[a.status]}>{a.status}</Badge></td>
-      <td className="sub">{a.source} <span className="muted">· as of {a.asOf}</span></td>
-      <td>{overridden && <button className="btn small ghost" onClick={() => dispatch({ type: 'override', key: a.key, value: null })}>Reset</button>}</td>
-    </tr>
+    <SettingsRow icon={assumptionIcon(a.key, a.group)} label={a.label} hint={`${a.source} · as of ${a.asOf}. ${STATUS_HELP[a.status]}.`}>
+      <span className="assump-control">
+        <NumInput className="inline-input" aria-label={a.label} value={a.value} onChange={(n) => dispatch({ type: 'override', key: a.key, value: n })} />
+        <span className="muted">%</span>
+        <Badge tone={STATUS_TONE[a.status]} title={STATUS_HELP[a.status]}>{a.status}</Badge>
+        {overridden && <button className="btn small ghost" onClick={() => dispatch({ type: 'override', key: a.key, value: null })}>Reset</button>}
+      </span>
+    </SettingsRow>
   );
 }
 
@@ -313,7 +286,7 @@ function RegionCard() {
     toast(`Country set to ${c?.name ?? code}. Amounts are shown in ${c?.currency ?? d.currency}; existing amounts were not converted.`);
   };
   return (
-    <SettingsSection title="Country and currency" note="Sets the currency amounts are written in, how numbers are grouped, and which country-specific tools are offered.">
+    <SettingsSection title="Country and currency" hint="Sets the currency amounts are written in, how numbers are grouped, and which country-specific tools are offered.">
       <SettingsRow icon="f-bank" label="Country">
         <select className="inline-input" aria-label="Country" value={state.profile.country ?? 'IN'} onChange={(e) => setCountry(e.target.value)}>
           {!countryOf(state.profile.country ?? 'IN') && <option value={state.profile.country}>{state.profile.country}</option>}

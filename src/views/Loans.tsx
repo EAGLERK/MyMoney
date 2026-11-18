@@ -14,7 +14,7 @@ export function LoansCard() {
   const [editingLoan, setEditingLoan] = useState<Liability | null>(null);
 
   return (
-      <Card title="Loans you are paying" sub={`Their ${emiWords()} count against what you can afford for each goal`}
+      <Card title="Loans you are paying" hint={`Their ${emiWords()} count against what you can afford for each goal`}
         right={<button className="btn small" onClick={() => setEditingLoan({ id: uid(), name: '', outstanding: 0, rate: 10, emi: 0 })}><Icon name="plus" size={16} />Add loan</button>}>
         {editingLoan && <LoanForm initial={editingLoan} onClose={() => setEditingLoan(null)} />}
         {state.liabilities.length === 0 ? <p className="sub">None recorded.</p> : (

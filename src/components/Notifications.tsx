@@ -7,7 +7,7 @@ import { todayISO } from '../lib/format';
 import { popIn } from '../motion';
 import { useStore } from '../store';
 import { Icon } from './icons';
-import { Card } from './ui';
+import { SettingsRow, SettingsSection } from './ui';
 import { useToast } from './feedback';
 
 /* ---------- Alerts, worked out from the person's own data ---------- */
@@ -179,18 +179,10 @@ export function NotificationSettings() {
   };
 
   return (
-    <Card title="Notifications" sub="Alerts about your money show under the bell at the top of every screen. You can also get them as browser notifications.">
-      <div className="stack">
-        <ul className="clean sub">
-          <li>Spending above your income, or a category well above your own average</li>
-          <li>Goals that need more than you have left over, and heavy loan payments</li>
-          <li>Reminders to import a new statement and to back up your data</li>
-          <li>Problems saving to your account</li>
-        </ul>
-        {!supported && <p className="sub">This browser does not support notifications. The bell still works.</p>}
-        {supported && permission === 'denied' && <p className="sub">Notifications are blocked for this site. Allow them in your browser&rsquo;s site settings, then come back and turn them on.</p>}
+    <SettingsSection title="Notifications" hint="Alerts about your money show under the bell at the top of every screen. You can also get them as browser notifications. They cover spending above your income or well above your own average, goals that need more than you have left over, heavy loan payments, reminders to import a statement and to back up, and problems saving to your account. Browser alerts appear while MyMoney is open in a tab, even a background one. Alerts when the app is closed would need a push service, which this version does not have.">
+      <SettingsRow icon="bell" label="Browser alerts" hint={!supported ? 'This browser does not support notifications. The bell still works.' : permission === 'denied' ? 'Notifications are blocked for this site. Allow them in your browser\u2019s site settings, then come back and turn them on.' : undefined}>
         {supported && permission !== 'denied' && (
-          <div className="row">
+          <span className="row">
             {on ? (
               <>
                 <span className="badge good">On</span>
@@ -200,10 +192,10 @@ export function NotificationSettings() {
             ) : (
               <button className="btn outline-accent" onClick={() => void turnOn()}><Icon name="bell" size={16} />Turn on browser alerts</button>
             )}
-          </div>
+          </span>
         )}
-        <p className="field-note">Browser alerts appear while MyMoney is open in a tab, even a background one. Alerts when the app is closed would need a push service, which this version does not have.</p>
-      </div>
-    </Card>
+        {(!supported || permission === 'denied') && <span className="badge">Unavailable</span>}
+      </SettingsRow>
+    </SettingsSection>
   );
 }

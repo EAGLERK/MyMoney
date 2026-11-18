@@ -91,7 +91,7 @@ export function Goals() {
       )}
 
       {choosing && (
-        <Card title="What are you saving for?" sub="Pick one. You can change every number afterwards.">
+        <Card title="What are you saving for?" hint="Pick one. You can change every number afterwards.">
           <GoalChooser onPick={add} />
         </Card>
       )}

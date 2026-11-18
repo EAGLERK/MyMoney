@@ -85,7 +85,7 @@ export function Plan({ go }: { go: (tab: string) => void }) {
       </Card>
 
       {advice.goalPlans.length > 0 && (
-        <Card title="Goal funding status" sub="Goals are funded soonest first, after your safety net and any costly debt">
+        <Card title="Goal funding status" hint="Goals are funded soonest first, after your safety net and any costly debt">
           <div className="table-wrap">
             <table className="table num cards">
               <thead><tr><th>Goal</th><th className="r">Needed / month</th><th className="r">Funded</th><th>Status</th><th><span className="sr-only">Action</span></th></tr></thead>

@@ -1,13 +1,33 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Icon } from './icons';
+import { useEffect, useId, useState, type ReactNode } from 'react';
+import { Icon, type IconName } from './icons';
 
-export function Card({ title, sub, right, children, className = '' }: { title?: ReactNode; sub?: ReactNode; right?: ReactNode; children: ReactNode; className?: string }) {
+/** A small (i) that explains something on hover, keyboard focus or tap. The text stays in the page for screen readers, so nothing is lost; it just is not in the way. */
+export function Hint({ text, label = 'More information' }: { text: ReactNode; label?: string }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => { if (!(e.target as Element | null)?.closest(`[data-hint="${CSS.escape(id)}"]`)) setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [open, id]);
+  return (
+    <span className="hint-wrap" data-hint={id} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
+      <button type="button" className="hint-btn" aria-label={label} aria-describedby={id} aria-expanded={open} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onClick={(e) => { e.preventDefault(); setOpen((o) => !o); }}>
+        <Icon name="info" size={16} />
+      </button>
+      <span id={id} role="tooltip" aria-hidden="true" className={open ? 'hint-bubble open' : 'hint-bubble'}>{text}</span>
+    </span>
+  );
+}
+
+export function Card({ title, sub, hint, right, children, className = '' }: { title?: ReactNode; sub?: ReactNode; /** Explanation that lives in an (i) next to the title instead of under it. */ hint?: ReactNode; right?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={`card ${className}`}>
       {(title || right) && (
         <div className="card-head">
           <div className="card-titles">
-            {title && <h2>{title}</h2>}
+            {title && <h2>{title}{hint && <Hint text={hint} />}</h2>}
             {sub && <div className="sub">{sub}</div>}
           </div>
           {right}
@@ -15,6 +35,24 @@ export function Card({ title, sub, right, children, className = '' }: { title?: 
       )}
       {children}
     </section>
+  );
+}
+
+/** A titled group of settings: a small capitalised heading, an optional (i), and rows of icon, label and control. */
+export function SettingsSection({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="set-section">
+      <h2>{title}{hint && <Hint text={hint} />}</h2>
+      <div className="set-rows">{children}</div>
+    </section>
+  );
+}
+export function SettingsRow({ icon, label, hint, children }: { icon: IconName; label: string; hint?: ReactNode; children?: ReactNode }) {
+  return (
+    <div className="set-row">
+      <span className="set-label"><Icon name={icon} size={24} /><span>{label}</span>{hint && <Hint text={hint} />}</span>
+      {children !== undefined && <div className="set-control">{children}</div>}
+    </div>
   );
 }
 
@@ -70,9 +108,8 @@ export function NumInput({ value, onChange, ...rest }: { value: number; onChange
 export function Field({ label, hint, required, wide, children }: { label: string; hint?: ReactNode; required?: boolean; /** Spans two columns of a form grid on wider screens. */ wide?: boolean; children: ReactNode }) {
   return (
     <label className={`field${wide ? ' span-2' : ''}`}>
-      <span className={required ? 'req' : undefined}>{label}</span>
+      <span className={`field-label${required ? ' req' : ''}`}>{label}{hint && <Hint text={hint} />}</span>
       {children}
-      {hint && <span className="hint">{hint}</span>}
     </label>
   );
 }
