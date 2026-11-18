@@ -266,7 +266,7 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
 
     // ---------- brand: the logo lockup and the app tile ----------
     check((await p.locator('.sidebar .lockup').getAttribute('aria-label')) === 'MyMoney' && (await p.locator('.sidebar .lockup img:visible').count()) === 1, 'the sidebar shows the MyMoney logo lockup, one drawing for the current theme');
-    check((await p.evaluate(() => document.querySelector('link[rel=icon]').getAttribute('href'))) === '/icon.svg', 'the browser tab icon is the app tile');
+    check((await p.evaluate(() => [...document.querySelectorAll('link[rel=icon]')].map((l) => l.getAttribute('href')).join())) === '/favicon-32x32.png,/favicon-16x16.png', 'the browser tab icons are the 32px and 16px favicons');
 
     // ---------- theme switcher: three labelled icon buttons ----------
     const themeBtns = p.getByRole('group', { name: 'Colour theme' }).getByRole('button');
