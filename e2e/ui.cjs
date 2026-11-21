@@ -218,6 +218,7 @@ const count = async (page) => Number(((await page.locator('main').innerText()).m
     await p.getByRole('button', { name: new RegExp(`^Delete ${before} transactions$`) }).click();
     check((await count(p)) === 0, 'confirming deletes everything');
 
+    check(await p.evaluate(() => { const c = document.querySelector('.voice-btn.agent canvas'); const i = document.querySelector('.voice-btn.agent img'); return (c && c.clientWidth > 0 && getComputedStyle(c).visibility === 'visible') || (i && i.clientWidth > 0); }), 'the assistant button shows its orb (animated, or the still picture without WebGL)');
     // ---------- Goals: one CTA, a clear chooser, undo ----------
     await nav('Goals');
     const goalCards = () => p.locator('main section.card h2', { hasText: /\(\d.*away\)|away/ }).count();

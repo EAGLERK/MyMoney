@@ -173,6 +173,8 @@ async function off() {
     await p.waitForFunction(() => [...document.querySelectorAll('input[aria-label="To-do item"]')].some((e) => e.value === 'Rice'), null, { timeout: 5000 }).catch(() => {});
     check((await p.getByRole('textbox', { name: 'To-do item' }).evaluateAll((els) => els.map((e) => e.value))).includes('Rice'), 'an item added by voice appears in the editor that is already open');
     await type(p, 'tick off milk');
+    await p.getByRole('checkbox', { name: 'Done: Milk' }).waitFor({ timeout: 3000 });
+    await p.waitForFunction(() => document.querySelector('input[type=checkbox][aria-label="Done: Milk"]')?.checked, null, { timeout: 3000 }).catch(() => {});
     check(await p.getByRole('checkbox', { name: 'Done: Milk' }).isChecked(), 'ticking an item by voice ticks its checkbox');
     await type(p, 'remove eggs from my shopping list');
     await p.waitForFunction(() => !(JSON.parse(localStorage.getItem('mymoney:v1') || '{}').notes?.[0]?.blocks?.[0]?.items || []).some((i) => i.text === 'Eggs'));

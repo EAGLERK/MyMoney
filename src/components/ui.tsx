@@ -31,7 +31,7 @@ export function Hint({ text, label = 'More information' }: { text: ReactNode; la
   }, [open]);
   return (
     <span className="hint-wrap" data-hint={id} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
-      <button ref={btn} type="button" className="hint-btn" aria-label={label} aria-describedby={id} aria-expanded={open} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onPointerDown={() => { openAtPress.current = open; }} onClick={(e) => { e.preventDefault(); setOpen(openAtPress.current === null ? true : !openAtPress.current); openAtPress.current = null; }}>
+      <button ref={btn} type="button" className="hint-btn" aria-label={label} aria-describedby={id} aria-expanded={open} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onPointerDown={(e) => { openAtPress.current = e.pointerType === 'mouse' ? false : open; }} onClick={(e) => { e.preventDefault(); setOpen(openAtPress.current === null ? true : !openAtPress.current); openAtPress.current = null; }}>
         <Icon name="info" size={16} />
       </button>
       <span ref={bubble} id={id} popover="manual" role="tooltip" aria-hidden="true" className={open ? 'hint-bubble open' : 'hint-bubble'}>{text}</span>
