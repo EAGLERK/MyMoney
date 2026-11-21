@@ -992,8 +992,9 @@ ul.files li.sheet-tab { padding-left: 30px; border-top: 0; padding-top: 6px; pad
 .topbar-search input::placeholder { color: var(--text-muted); }
 
 /* The AI assistant is the round picture in the top bar (as drawn in the design). */
+.voice-btn.agent:not(.live) { box-shadow: none; }
 .voice-btn.agent { position: relative; width: var(--hero); min-width: var(--hero); height: var(--hero); min-height: var(--hero); padding: 0; border: 0; border-radius: 50%; background: none; overflow: visible; }
-.voice-btn.agent .agent-orb { display: block; background: none; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.voice-btn.agent .agent-orb { display: block; background: none; width: 70%; height: 70%; margin: auto; border-radius: 50%; object-fit: cover; }
 .voice-btn.agent.live { box-shadow: 0 0 0 calc(var(--pulse) * 5px + 2px) var(--accent); border: 0; }
 .voice-btn.agent:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 899px) { .btn.hero.add-btn { min-width: 44px; padding: 0 12px; } .add-btn-text { display: none; } }
@@ -1239,4 +1240,4 @@ dialog.goal-pick { width: min(840px, calc(100vw - 32px)); border-radius: 16px; }
 .goal-pick .choice:last-child:nth-child(odd) { grid-column: 1 / -1; }
 @media (max-width: 599px) { .goal-pick .chooser { grid-template-columns: minmax(0, 1fr); gap: 12px; } .goal-pick .choice { min-height: 80px; padding: 16px; gap: 16px; } }
 
-.voice-btn.agent .agent-orb-still { position: absolute; inset: 0; }
+.voice-btn.agent .agent-orb-still { position: absolute; inset: 15%; }
