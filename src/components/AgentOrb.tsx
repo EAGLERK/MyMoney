@@ -11,31 +11,35 @@ import { gsap, reducedMotion } from '../motion';
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
 const FRAG = `precision mediump float;
 uniform vec2 r;uniform float t;uniform float e;
-float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
-float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<3;i++){s+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return s;}
+mat3 rot(vec3 a){float cx=cos(a.x),sx=sin(a.x),cy=cos(a.y),sy=sin(a.y),cz=cos(a.z),sz=sin(a.z);
+  return mat3(cy*cz,cy*sz,-sy,sx*sy*cz-cx*sz,sx*sy*sz+cx*cz,sx*cy,cx*sy*cz+sx*sz,cx*sy*sz-sx*cz,cx*cy);}
+float sheet(vec3 p,mat3 R,float ph){vec3 q=R*p;return q.z+.42*sin(q.x*2.1+ph)*cos(q.y*1.6-ph*.7)+.22*sin(q.y*2.6+ph*1.3);}
 void main(){
   float m=min(r.x,r.y);
   vec2 uv=(gl_FragCoord.xy*2.-r)/m;
   float d=length(uv);
-  float aa=2./m;
-  float mask=1.-smoothstep(1.-aa,1.,d);
+  float mask=1.-smoothstep(1.-2./m,1.,d);
   if(mask<=0.){gl_FragColor=vec4(0.);return;}
-  float z=sqrt(max(0.,1.-d*d));
-  float s=t*.16;
-  vec2 q=uv*.85+vec2(cos(s),sin(s*1.3))*.6;
-  vec2 w=vec2(fbm(q+s),fbm(q+5.2-s));
-  float f=fbm(q+2.*w);
-  float ridge=pow(1.-abs(2.*fbm(q*1.1+w*1.4+s*.7)-1.),12.);
-  vec3 deep=vec3(.02,.19,.18),mid=vec3(.04,.28,.26),aqua=vec3(.30,.69,.65),glow=vec3(.39,.98,.92);
-  vec3 col=mix(deep,mid,smoothstep(.25,.7,f));
-  col=mix(col,aqua*.9,smoothstep(.5,.9,fbm(q*.7-w))*.7);
-  col+=glow*ridge*(.45+.5*e);
-  float lit=clamp(.5+.55*dot(normalize(vec3(uv,z)),normalize(vec3(-.5,.6,.6))),0.,1.);
-  col*=lit;
-  float fr=pow(1.-z,2.4);
-  col+=vec3(.13,.44,.42)*fr*(1.1+.5*sin(atan(uv.y,uv.x)*2.+s*3.));
-  gl_FragColor=vec4(col*mask,mask);
+  float zf=sqrt(max(0.,1.-d*d));
+  mat3 R1=rot(vec3(t*.31,t*.23,t*.17)),R2=rot(vec3(1.7-t*.19,.6+t*.27,2.1-t*.21));
+  float a1=0.,a2=0.;
+  float j=fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453);
+  for(int i=0;i<40;i++){
+    vec3 p=vec3(uv,mix(-zf,zf,(float(i)+j)/40.));
+    a1+=exp(-abs(sheet(p,R1,t*1.1))*24.);
+    a2+=exp(-abs(sheet(p,R2,t*.9+2.))*24.);
+  }
+  a1*=zf/20.;a2*=zf/20.;
+  float b1=1.-exp(-a1*6.),b2=1.-exp(-a2*6.);
+  vec3 deep=vec3(.02,.17,.16),aqua=vec3(.30,.78,.72),teal=vec3(.06,.45,.42),glow=vec3(.62,1.,.95);
+  vec3 col=deep*(.55+.45*zf);
+  col+=aqua*b1*.85+teal*b2*.8;
+  col+=glow*(pow(b1,5.)*.9+pow(b2,5.)*.6)*(.8+.4*e);
+  float fr=pow(1.-zf,2.5);
+  float hue=.5+.5*sin(atan(uv.y,uv.x)*2.+t*.8);
+  col+=mix(vec3(.18,.72,.62),vec3(.35,.95,.88),hue)*fr*1.3;
+  col+=glow*smoothstep(.93,1.,d)*.35;
+  gl_FragColor=vec4(min(col,1.)*mask,mask);
 }`;
 
 export function AgentOrb({ live }: { live: boolean }) {
@@ -82,7 +86,7 @@ export function AgentOrb({ live }: { live: boolean }) {
     size();
     setGl(true);
 
-    const tick = (_: number, ms: number) => { time += (ms / 1000) * (1 + energy.current.e * 2.5); draw(); };
+    const tick = (_: number, ms: number) => { time += (ms / 1000) * 0.7 * (1 + energy.current.e * 1.5); draw(); };
     const animate = !reducedMotion();
     if (animate) gsap.ticker.add(tick);
     return () => {
